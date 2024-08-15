@@ -115,7 +115,7 @@ data class Program(
     val name: String,
     val source: Source,
     val parse: Parse?,
-    val output: OutputSpec?,
+    val output: Output?,
 )
 
 fun interface InputGateway {
@@ -194,7 +194,7 @@ data class SourceSpec(
     )
 }
 
-data class OutputSpec(
+data class Output(
     val format: String? = null,
     val filename: String? = null,
     val tags: Map<String, String> = emptyMap(),
@@ -207,7 +207,7 @@ data class ParseSpec(
 data class ProgramSpec(
     val source: SourceSpec,
     val parse: ParseSpec? = null,
-    val output: OutputSpec? = null,
+    val output: Output? = null,
 )
 
 object FileSyncSpec : ConfigSpec() {
