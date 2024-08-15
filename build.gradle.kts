@@ -11,10 +11,13 @@ repositories {
 
 dependencies {
     val slf4jVersion = "2.0.16"
+    val konfVersion = "1.1.2"
 
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("com.uchuhimo", "konf", "1.1.2")
+    implementation("com.uchuhimo", "konf-core", konfVersion)
+    implementation("com.uchuhimo", "konf-yaml", konfVersion)
+
     implementation("io.github.oshai", "kotlin-logging-jvm", "7.0.0")
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core-jvm", "1.8.1")
 
