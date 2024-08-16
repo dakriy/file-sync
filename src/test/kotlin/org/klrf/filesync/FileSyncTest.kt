@@ -5,6 +5,7 @@ import com.uchuhimo.konf.ConfigSpec
 import com.uchuhimo.konf.Feature
 import com.uchuhimo.konf.source.LoadException
 import com.uchuhimo.konf.source.yaml
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -140,7 +141,10 @@ class FTPSource(
 data class Parse(
     val regex: Regex,
     val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
+    val strict: Boolean,
 ) {
+    private val logger = KotlinLogging.logger { }
+
     private val captureGroups by lazy {
         val captureGroupRegex = """\(\?<(\w+)>""".toRegex()
         captureGroupRegex.findAll(regex.toString()).map { it.groupValues[1] }.toList()
@@ -148,7 +152,15 @@ data class Parse(
 
     fun parse(item: Item): ParsedItem? {
         val result =
-            regex.matchEntire(item.name) ?: return null
+            regex.matchEntire(item.name)
+
+        if (result == null) {
+            val message = "Item in ${item.program} did not match '${item.name}'"
+            if (strict) error(message)
+            else logger.warn { message }
+
+            return null
+        }
 
         val captureGroups = captureGroups.associateWith { captureGroupName ->
             result.groups[captureGroupName]?.value
@@ -241,9 +253,13 @@ data class Output(
 data class ParseSpec(
     val regex: String,
     val dates: Map<String, String> = emptyMap(),
+    val strict: Boolean = false,
 ) {
-    fun toParse() =
-        Parse(regex.toRegex(), dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) })
+    fun toParse() = Parse(
+        regex.toRegex(),
+        dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) },
+        strict,
+    )
 }
 
 data class ProgramSpec(
@@ -1164,5 +1180,32 @@ class FileSyncTest {
                     .map { OutputItem(it, it.name) }
             }
         }
+    }
+
+    @Test
+    fun `should error on parse failure given flag to error on parse failure`() {
+        val ex = shouldThrow<IllegalStateException> {
+            fileSyncTest {
+                config(
+                    """
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                      parse:
+                        regex: item \d
+                        strict: true
+                 """.trimIndent()
+                )
+
+                val item = MemoryItem("program", "an item")
+
+                ftpConnector("fake.url", item)
+            }
+        }
+
+        ex.message shouldContain "Item in program did not match 'an item'"
     }
 }
