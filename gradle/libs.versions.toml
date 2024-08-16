@@ -13,3 +13,5 @@ kotlinCoroutinesCore = { group = "org.jetbrains.kotlinx", name = "kotlinx-corout
 slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 slf4jSimple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 kotestCore = { group = "io.kotest", name = "kotest-assertions-core-jvm", version = "5.9.1" }
+h2 = { group = "com.h2database", name = "h2", version = "2.2.224" }
+postgres = { group = "com.impossibl.pgjdbc-ng", name = "pgjdbc-ng", version = "0.8.9" }

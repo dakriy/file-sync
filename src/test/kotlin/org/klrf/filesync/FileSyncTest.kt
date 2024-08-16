@@ -1,11 +1,7 @@
 package org.klrf.filesync
 
-import com.uchuhimo.konf.Config
-import com.uchuhimo.konf.ConfigSpec
-import com.uchuhimo.konf.Feature
 import com.uchuhimo.konf.source.LoadException
 import com.uchuhimo.konf.source.yaml
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -13,12 +9,17 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
 import org.intellij.lang.annotations.Language
+import org.klrf.filesync.domain.FileSync
+import org.klrf.filesync.gateways.FTPConnector
+import org.klrf.filesync.domain.Item
+import org.klrf.filesync.domain.OutputGateway
+import org.klrf.filesync.domain.OutputItem
+import org.klrf.filesync.gateways.ConfigInput
+import org.klrf.filesync.gateways.FTPConnection
 
 //class FileOutput : Output {
 //    override suspend fun save(items: List<OutputItem>) {
@@ -28,281 +29,6 @@ import org.intellij.lang.annotations.Language
 //        // audio normalization
 //    }
 //}
-
-interface Item {
-    val program: String
-
-    val name: String
-
-    fun data(): ByteArray
-
-    fun computeFormatFromName(): String = if ('.' in name) {
-        name.substringAfterLast('.')
-    } else "mp3"
-
-    fun nameAndExtension(): Pair<String, String> {
-        val name = name.substringBeforeLast('.')
-        val extension = computeFormatFromName()
-        return name to extension
-    }
-}
-
-data class ParsedItem(
-    val item: Item,
-    val captureGroups: Map<String, String> = emptyMap(),
-    val dates: Map<String, LocalDate> = emptyMap(),
-) : Item by item {
-    private val nameAndExtension = nameAndExtension()
-
-    private val replacements = mapOf(
-        "old_filename" to nameAndExtension.first,
-        "old_extension" to nameAndExtension.second,
-        "raw_filename" to item.name,
-    ) + captureGroups
-
-    private val dateFormatSignatures = dates.keys.map { "{$it:" }
-
-    private fun String.replaceDate(found: Pair<Int, String>): String {
-        val (index, foundStr) = found
-        val foundName = foundStr.drop(1).dropLast(1)
-        val full = substring(index).substringBefore('}')
-        val format = full.substringAfter(':')
-        val date = dates[foundName]!!
-        val pattern = DateTimeFormatter.ofPattern(format)
-
-        return replace("{$foundName:$format}", date.format(pattern))
-    }
-
-    fun interpolate(str: String): String {
-        var dated = str
-        var found: Pair<Int, String>?
-        while (true) {
-            found = dated.findAnyOf(dateFormatSignatures)
-            if (found == null) break
-            dated = dated.replaceDate(found)
-        }
-
-        return replacements.entries.fold(dated) { acc, (key, value) ->
-            acc.replace("{$key}", value)
-        }
-    }
-}
-
-data class OutputItem(
-    val item: Item,
-    val fileName: String,
-    val format: String = "mp3",
-    val tags: Map<String, String> = emptyMap(),
-)
-
-fun interface OutputGateway {
-    fun save(items: List<OutputItem>)
-}
-
-// Gateway that maps any kind of source to items
-fun interface Source {
-    fun listItems(): Sequence<Item>
-}
-
-object EmptySource : Source {
-    override fun listItems(): Sequence<Item> = emptySequence()
-}
-
-interface FTPConnector {
-    val connection: FTPConnection
-
-    fun listFiles(): Sequence<String>
-//    fun downloadFile(file: String): ByteArray
-}
-
-data class FTPConnection(
-    val url: String,
-    val username: String? = null,
-    val password: String? = null,
-    val path: String? = null
-)
-
-class FTPSource(
-    private val program: String,
-    private val connector: FTPConnector,
-) : Source {
-    inner class FTPItem(
-        override val name: String,
-    ) : Item {
-        override val program: String = this@FTPSource.program
-        override fun data(): ByteArray = ByteArray(0)
-    }
-
-    override fun listItems(): Sequence<Item> {
-        return connector.listFiles().map(::FTPItem)
-    }
-}
-
-data class Parse(
-    val regex: Regex,
-    val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
-    val strict: Boolean,
-) {
-    private val logger = KotlinLogging.logger { }
-
-    private val captureGroups by lazy {
-        val captureGroupRegex = """\(\?<(\w+)>""".toRegex()
-        captureGroupRegex.findAll(regex.toString()).map { it.groupValues[1] }.toList()
-    }
-
-    fun parse(item: Item): ParsedItem? {
-        val result =
-            regex.matchEntire(item.name)
-
-        if (result == null) {
-            val message = "Item in ${item.program} did not match '${item.name}'"
-            if (strict) error(message)
-            else logger.warn { message }
-
-            return null
-        }
-
-        val captureGroups = captureGroups.associateWith { captureGroupName ->
-            result.groups[captureGroupName]?.value
-                ?: error("Capture group '$captureGroupName' did not exist. Regex: '$regex' INPUT: ${item.name}.")
-        }
-
-        val dateGroups = dateWithParseFormat.mapValues { (name, format) ->
-            val dateString = captureGroups[name]
-                ?: error("Capture group '$name' does not exist in '$regex' for program '${item.program}'")
-
-            LocalDate.parse(dateString, format)
-        }
-
-        return ParsedItem(item, captureGroups, dateGroups)
-    }
-}
-
-data class Program(
-    val name: String,
-    val source: Source,
-    val parse: Parse?,
-    val output: Output?,
-)
-
-fun interface InputGateway {
-    fun programs(): List<Program>
-}
-
-class FileSync(
-    private val input: InputGateway,
-    private val output: OutputGateway,
-) {
-    fun sync() {
-        val items = input.programs().flatMap { program ->
-            program.source.listItems()
-                .mapNotNull { item ->
-                    if (program.parse == null) ParsedItem(item)
-                    else program.parse.parse(item)
-                }
-                .take(program.output?.limit ?: Int.MAX_VALUE)
-                .map { item ->
-                    val (name, extension) = item.nameAndExtension()
-                    val format = program.output?.format ?: extension
-                    val filename = program.output?.filename ?: name
-
-                    val tags = program.output?.tags ?: emptyMap()
-
-                    val replacedTags = tags.mapValues { (_, value) -> item.interpolate(value) }
-                    val replacedFileName = item.interpolate(filename)
-
-                    OutputItem(item, replacedFileName, format, replacedTags)
-                }
-        }
-
-        output.save(items)
-    }
-}
-
-enum class SourceType {
-    Empty,
-    FTP,
-//    NextCloud,
-//    Custom,
-}
-
-data class SourceSpec(
-    val type: SourceType,
-
-    val url: String? = null,
-    val username: String? = null,
-    val password: String? = null,
-    val path: String? = null,
-//    val customSource: String? = null,
-) {
-    fun toFTPConnection() = FTPConnection(
-        url ?: error("url is required for ftp source"),
-        username,
-        password,
-        path,
-    )
-}
-
-data class Output(
-    val format: String? = null,
-    val filename: String? = null,
-    val tags: Map<String, String> = emptyMap(),
-    val limit: Int? = null,
-)
-
-data class ParseSpec(
-    val regex: String,
-    val dates: Map<String, String> = emptyMap(),
-    val strict: Boolean = false,
-) {
-    fun toParse() = Parse(
-        regex.toRegex(),
-        dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) },
-        strict,
-    )
-}
-
-data class ProgramSpec(
-    val source: SourceSpec,
-    val parse: ParseSpec? = null,
-    val output: Output? = null,
-)
-
-object FileSyncSpec : ConfigSpec() {
-    val programs by optional<Map<String, ProgramSpec>>(emptyMap())
-}
-
-class ConfigInput(
-    private val ftpConnectorFactory: (FTPConnection) -> FTPConnector,
-    sourceConfig: Config.() -> Config,
-) : InputGateway {
-    val config = Config {
-        addSpec(FileSyncSpec)
-        enable(Feature.OPTIONAL_SOURCE_BY_DEFAULT)
-    }
-        .run(sourceConfig)
-        .from.env()
-        .from.systemProperties()
-
-    override fun programs(): List<Program> {
-        return config[FileSyncSpec.programs].map { (name, programSpec) ->
-            val sourceConfig = programSpec.source
-            val type = sourceConfig.type
-
-            val source = when (type) {
-                SourceType.Empty -> EmptySource
-                SourceType.FTP -> {
-                    val ftpConnection = sourceConfig.toFTPConnection()
-                    FTPSource(name, ftpConnectorFactory(ftpConnection))
-                }
-            }
-
-            val parse = programSpec.parse?.toParse()
-
-            Program(name, source, parse, programSpec.output)
-        }
-    }
-}
 
 data class MemoryItem(
     override val program: String,

@@ -23,9 +23,11 @@ dependencies {
 
     implementation(libs.slf4j)
     runtimeOnly(libs.slf4jSimple)
+    runtimeOnly(libs.postgres)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotestCore)
+    testRuntimeOnly(libs.h2)
 }
 
 tasks {
