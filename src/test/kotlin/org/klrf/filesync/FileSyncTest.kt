@@ -12,6 +12,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
@@ -46,7 +47,8 @@ interface Item {
 
 data class ParsedItem(
     val item: Item,
-    val captureGroups: Map<String, String>,
+    val captureGroups: Map<String, String> = emptyMap(),
+//    val dates: Map<String, LocalDateTime>,
 ) : Item by item {
     private val nameAndExtension = nameAndExtension()
 
@@ -116,6 +118,18 @@ data class Parse(
         val captureGroupRegex = """\(\?<(\w+)>""".toRegex()
         captureGroupRegex.findAll(rawRegex).map { it.groupValues[1] }.toList()
     }
+
+    fun parse(item: Item): ParsedItem? {
+        val result =
+            regex.matchEntire(item.name) ?: return null
+
+        val captureGroups = captureGroups.associateWith { captureGroupName ->
+            result.groups[captureGroupName]?.value
+                ?: error("Capture group '$captureGroupName' did not exist. Regex: '${rawRegex}' INPUT: ${item.name}.")
+        }
+
+        return ParsedItem(item, captureGroups)
+    }
 }
 
 data class Program(
@@ -138,19 +152,8 @@ class FileSync(
         val items = input.programs().flatMap { program ->
             program.source.listItems()
                 .mapNotNull { item ->
-                    if (program.parse == null) return@mapNotNull ParsedItem(item, emptyMap())
-                    program.parse.regex.toString()
-
-                    val result =
-                        program.parse.regex.matchEntire(item.name) ?: return@mapNotNull null
-
-                    val captureGroups =
-                        program.parse.captureGroups.associateWith { captureGroupName ->
-                            result.groups[captureGroupName]?.value
-                                ?: error("Capture group '$captureGroupName' did not exist. Regex: '${program.parse.rawRegex}' INPUT: ${item.name}.")
-                        }
-
-                    ParsedItem(item, captureGroups)
+                    if (program.parse == null) ParsedItem(item)
+                    else program.parse.parse(item)
                 }
                 .map { item ->
                     val (name, extension) = item.nameAndExtension()
@@ -936,5 +939,28 @@ class FileSyncTest {
         }
 
         ex.message shouldBe "Unknown pattern letter: I"
+    }
+
+    @Test
+    fun `should error given valid parse format but specified date does not follow format`() {
+//        val ex = shouldThrow<IllegalArgumentException> {
+        fileSyncTest {
+            config(
+                """
+            fileSync:
+              programs:
+                programName:
+                  source:
+                    type: Empty
+                  parse:
+                    regex: file (?<date>\d+-\d+-\d+)
+                    dates:
+                      date: YYYY.MM.DD
+             """.trimIndent()
+            )
+        }
+//        }
+
+//        ex.message shouldBe "Unknown pattern letter: I"
     }
 }
