@@ -12,7 +12,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
@@ -49,7 +49,7 @@ interface Item {
 data class ParsedItem(
     val item: Item,
     val captureGroups: Map<String, String> = emptyMap(),
-//    val dates: Map<String, LocalDateTime>,
+    val dates: Map<String, LocalDate> = emptyMap(),
 ) : Item by item {
     private val nameAndExtension = nameAndExtension()
 
@@ -58,6 +58,25 @@ data class ParsedItem(
         "old_extension" to nameAndExtension.second,
         "raw_filename" to item.name,
     ) + captureGroups
+
+    private val dateFormatSignatures = dates.keys.map { "{$it:" }
+
+    fun interpolate(str: String): String {
+        val found = str.findAnyOf(dateFormatSignatures)
+        val dated = if (found != null) {
+            val (index, foundStr) = found
+            val foundName = foundStr.drop(1).dropLast(1)
+            val full = str.substring(index).substringBefore('}')
+            val format = full.substringAfter(':')
+            val date = dates[foundName]!!
+            val pattern = DateTimeFormatter.ofPattern(format)
+            str.replace("{$foundName:$format}", date.format(pattern))
+        } else str
+
+        return replacements.entries.fold(dated) { acc, (key, value) ->
+            acc.replace("{$key}", value)
+        }
+    }
 }
 
 data class OutputItem(
@@ -132,10 +151,10 @@ data class Parse(
             val dateString = captureGroups[name]
                 ?: error("Capture group '$name' does not exist in '$regex' for program '${item.program}'")
 
-            LocalDateTime.parse(dateString, format)
+            LocalDate.parse(dateString, format)
         }
 
-        return ParsedItem(item, captureGroups)
+        return ParsedItem(item, captureGroups, dateGroups)
     }
 }
 
@@ -168,16 +187,8 @@ class FileSync(
 
                     val tags = program.output?.tags ?: emptyMap()
 
-                    val replacedTags = tags.mapValues { (_, value) ->
-                        item.replacements.entries.fold(value) { acc, (rk, rv) ->
-                            acc.replace("{$rk}", rv)
-                        }
-                    }
-
-                    val replacedFileName =
-                        item.replacements.entries.fold(filename) { acc, (rk, rv) ->
-                            acc.replace("{$rk}", rv)
-                        }
+                    val replacedTags = tags.mapValues { (_, value) -> item.interpolate(value) }
+                    val replacedFileName = item.interpolate(filename)
 
                     OutputItem(item, replacedFileName, format, replacedTags)
                 }
@@ -1008,5 +1019,70 @@ class FileSyncTest {
         }
 
         ex.message shouldBe "Text '1-1-1' could not be parsed at index 0"
+    }
+
+    @Test
+    fun `should error given invalid output format for date`() {
+        val ex = shouldThrow<IllegalArgumentException> {
+            fileSyncTest {
+                config(
+                    """
+                    fileSync:
+                      programs:
+                        program:
+                          source:
+                            type: FTP
+                            url: fake.url
+                          parse:
+                            regex: file (?<date>\d+-\d+-\d+)
+                            dates:
+                              date: MM-dd-yy
+                          output:
+                            filename: "{date:INVALID FORMAT}"
+                     """.trimIndent()
+                )
+
+                val item = MemoryItem(
+                    "program",
+                    "file 03-02-23",
+                )
+
+                ftpConnector("fake.url", item)
+            }
+        }
+        ex.message shouldContain "Unknown pattern letter: I"
+    }
+
+    @Test
+    fun `should inject formatted date given a date to parse`() {
+        fileSyncTest {
+            config(
+                """
+                    fileSync:
+                      programs:
+                        program:
+                          source:
+                            type: FTP
+                            url: fake.url
+                          parse:
+                            regex: file (?<date>\d+-\d+-\d+)
+                            dates:
+                              date: MM-dd-yy
+                          output:
+                            filename: "{date:yyyy-MM-dd}"
+                     """.trimIndent()
+            )
+
+            val item = MemoryItem(
+                "program",
+                "file 03-02-23",
+            )
+
+            ftpConnector("fake.url", item)
+
+            assert { results ->
+                results shouldMatch listOf(OutputItem(item, "2023-03-02"))
+            }
+        }
     }
 }
