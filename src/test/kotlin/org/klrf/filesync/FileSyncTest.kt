@@ -14,6 +14,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
 import org.intellij.lang.annotations.Language
@@ -130,6 +131,8 @@ data class Parse(
         val dateGroups = dateWithParseFormat.mapValues { (name, format) ->
             val dateString = captureGroups[name]
                 ?: error("Capture group '$name' does not exist in '$regex' for program '${item.program}'")
+
+            LocalDateTime.parse(dateString, format)
         }
 
         return ParsedItem(item, captureGroups)
@@ -951,17 +954,17 @@ class FileSyncTest {
             fileSyncTest {
                 config(
                     """
-            fileSync:
-              programs:
-                program:
-                  source:
-                    type: FTP
-                    url: fake.url
-                  parse:
-                    regex: file (?<date>\d+-\d+-\d+)
-                    dates:
-                      other: YYYY-MM-DD
-             """.trimIndent()
+                    fileSync:
+                      programs:
+                        program:
+                          source:
+                            type: FTP
+                            url: fake.url
+                          parse:
+                            regex: file (?<date>\d+-\d+-\d+)
+                            dates:
+                              other: YYYY-MM-DD
+                     """.trimIndent()
                 )
 
                 val item = MemoryItem(
@@ -976,26 +979,34 @@ class FileSyncTest {
         ex.message shouldBe "Capture group 'other' does not exist in 'file (?<date>\\d+-\\d+-\\d+)' for program 'program'"
     }
 
-//    @Test
-//    fun `should error given valid parse format but specified date does not follow format`() {
-////        val ex = shouldThrow<IllegalArgumentException> {
-//        fileSyncTest {
-//            config(
-//                """
-//            fileSync:
-//              programs:
-//                programName:
-//                  source:
-//                    type: Empty
-//                  parse:
-//                    regex: file (?<date>\d+-\d+-\d+)
-//                    dates:
-//                      date: YYYY.MM.DD
-//             """.trimIndent()
-//            )
-//        }
-////        }
-//
-////        ex.message shouldBe "Unknown pattern letter: I"
-//    }
+    @Test
+    fun `should error given valid parse format but specified date does not follow format`() {
+        val ex = shouldThrow<DateTimeParseException> {
+            fileSyncTest {
+                config(
+                    """
+                    fileSync:
+                      programs:
+                        program:
+                          source:
+                            type: FTP
+                            url: fake.url
+                          parse:
+                            regex: file (?<date>\d+-\d+-\d+)
+                            dates:
+                              date: YYYY.MM.DD
+                     """.trimIndent()
+                )
+
+                val item = MemoryItem(
+                    "program",
+                    "file 1-1-1",
+                )
+
+                ftpConnector("fake.url", item)
+            }
+        }
+
+        ex.message shouldBe "Text '1-1-1' could not be parsed at index 0"
+    }
 }
