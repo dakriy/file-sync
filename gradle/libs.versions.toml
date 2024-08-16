@@ -1,0 +1,15 @@
+[versions]
+exposed = "0.53.0"
+slf4j = "2.0.16"
+konf = "1.1.2"
+
+[libraries]
+exposedCore = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "exposed" }
+exposedJdbc = { group = "org.jetbrains.exposed", name = "exposed-jdbc", version.ref = "exposed" }
+konfCore = { group = "com.uchuhimo", name = "konf-core", version.ref = "konf" }
+konfYaml = { group = "com.uchuhimo", name = "konf-yaml", version.ref = "konf" }
+kotlinLogger = { group = "io.github.oshai", name = "kotlin-logging-jvm", version = "7.0.0" }
+kotlinCoroutinesCore = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.1" }
+slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+slf4jSimple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+kotestCore = { group = "io.kotest", name = "kotest-assertions-core-jvm", version = "5.9.1" }
