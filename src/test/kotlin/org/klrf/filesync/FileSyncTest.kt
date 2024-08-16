@@ -110,13 +110,12 @@ class FTPSource(
 }
 
 data class Parse(
-    val rawRegex: String,
+    val regex: Regex,
     val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
-    val regex: Regex = rawRegex.toRegex(),
 ) {
     val captureGroups by lazy {
         val captureGroupRegex = """\(\?<(\w+)>""".toRegex()
-        captureGroupRegex.findAll(rawRegex).map { it.groupValues[1] }.toList()
+        captureGroupRegex.findAll(regex.toString()).map { it.groupValues[1] }.toList()
     }
 
     fun parse(item: Item): ParsedItem? {
@@ -125,7 +124,12 @@ data class Parse(
 
         val captureGroups = captureGroups.associateWith { captureGroupName ->
             result.groups[captureGroupName]?.value
-                ?: error("Capture group '$captureGroupName' did not exist. Regex: '${rawRegex}' INPUT: ${item.name}.")
+                ?: error("Capture group '$captureGroupName' did not exist. Regex: '$regex' INPUT: ${item.name}.")
+        }
+
+        val dateGroups = dateWithParseFormat.mapValues { (name, format) ->
+            val dateString = captureGroups[name]
+                ?: error("Capture group '$name' does not exist in '$regex' for program '${item.program}'")
         }
 
         return ParsedItem(item, captureGroups)
@@ -147,7 +151,6 @@ class FileSync(
     private val input: InputGateway,
     private val output: OutputGateway,
 ) {
-
     fun sync() {
         val items = input.programs().flatMap { program ->
             program.source.listItems()
@@ -215,7 +218,8 @@ data class ParseSpec(
     val regex: String,
     val dates: Map<String, String> = emptyMap(),
 ) {
-    fun toParse() = Parse(regex, dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) })
+    fun toParse() =
+        Parse(regex.toRegex(), dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) })
 }
 
 data class ProgramSpec(
@@ -942,25 +946,56 @@ class FileSyncTest {
     }
 
     @Test
-    fun `should error given valid parse format but specified date does not follow format`() {
-//        val ex = shouldThrow<IllegalArgumentException> {
-        fileSyncTest {
-            config(
-                """
+    fun `should error given valid parse format but date was not a capture group`() {
+        val ex = shouldThrow<IllegalStateException> {
+            fileSyncTest {
+                config(
+                    """
             fileSync:
               programs:
-                programName:
+                program:
                   source:
-                    type: Empty
+                    type: FTP
+                    url: fake.url
                   parse:
                     regex: file (?<date>\d+-\d+-\d+)
                     dates:
-                      date: YYYY.MM.DD
+                      other: YYYY-MM-DD
              """.trimIndent()
-            )
-        }
-//        }
+                )
 
-//        ex.message shouldBe "Unknown pattern letter: I"
+                val item = MemoryItem(
+                    "program",
+                    "file 1-1-1",
+                )
+
+                ftpConnector("fake.url", item)
+            }
+        }
+
+        ex.message shouldBe "Capture group 'other' does not exist in 'file (?<date>\\d+-\\d+-\\d+)' for program 'program'"
     }
+
+//    @Test
+//    fun `should error given valid parse format but specified date does not follow format`() {
+////        val ex = shouldThrow<IllegalArgumentException> {
+//        fileSyncTest {
+//            config(
+//                """
+//            fileSync:
+//              programs:
+//                programName:
+//                  source:
+//                    type: Empty
+//                  parse:
+//                    regex: file (?<date>\d+-\d+-\d+)
+//                    dates:
+//                      date: YYYY.MM.DD
+//             """.trimIndent()
+//            )
+//        }
+////        }
+//
+////        ex.message shouldBe "Unknown pattern letter: I"
+//    }
 }
