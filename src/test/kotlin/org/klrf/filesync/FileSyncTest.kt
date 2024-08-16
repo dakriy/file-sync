@@ -12,6 +12,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.time.format.DateTimeFormatter
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
 import org.intellij.lang.annotations.Language
@@ -26,6 +27,8 @@ import org.intellij.lang.annotations.Language
 //}
 
 interface Item {
+    val program: String
+
     val name: String
 
     fun data(): ByteArray
@@ -77,7 +80,7 @@ object EmptySource : Source {
 interface FTPConnector {
     val connection: FTPConnection
 
-    fun listFiles(): List<String>
+    fun listFiles(): Sequence<String>
 //    fun downloadFile(file: String): ByteArray
 }
 
@@ -89,21 +92,25 @@ data class FTPConnection(
 )
 
 class FTPSource(
+    private val program: String,
     private val connector: FTPConnector,
 ) : Source {
-    inner class FTPItem(override val name: String) : Item {
+    inner class FTPItem(
+        override val name: String,
+    ) : Item {
+        override val program: String = this@FTPSource.program
         override fun data(): ByteArray = ByteArray(0)
     }
 
     override fun listItems(): Sequence<Item> {
-        return connector.listFiles().map { FTPItem(it) }.asSequence()
+        return connector.listFiles().map(::FTPItem)
     }
 }
 
 data class Parse(
     val rawRegex: String,
+    val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
     val regex: Regex = rawRegex.toRegex(),
-//    val dateWithParseFormat: Map<String, String>
 ) {
     val captureGroups by lazy {
         val captureGroupRegex = """\(\?<(\w+)>""".toRegex()
@@ -166,6 +173,7 @@ class FileSync(
                     OutputItem(item, replacedFileName, format, replacedTags)
                 }
         }
+
         output.save(items)
     }
 }
@@ -202,7 +210,10 @@ data class Output(
 
 data class ParseSpec(
     val regex: String,
-)
+    val dates: Map<String, String> = emptyMap(),
+) {
+    fun toParse() = Parse(regex, dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) })
+}
 
 data class ProgramSpec(
     val source: SourceSpec,
@@ -227,7 +238,7 @@ class ConfigInput(
         .from.systemProperties()
 
     override fun programs(): List<Program> {
-        return config[FileSyncSpec.programs].map { (s, programSpec) ->
+        return config[FileSyncSpec.programs].map { (name, programSpec) ->
             val sourceConfig = programSpec.source
             val type = sourceConfig.type
 
@@ -235,19 +246,19 @@ class ConfigInput(
                 SourceType.Empty -> EmptySource
                 SourceType.FTP -> {
                     val ftpConnection = sourceConfig.toFTPConnection()
-                    FTPSource(ftpConnectorFactory(ftpConnection))
+                    FTPSource(name, ftpConnectorFactory(ftpConnection))
                 }
             }
 
-            val parse = programSpec.parse?.let { Parse(it.regex) }
+            val parse = programSpec.parse?.toParse()
 
-            Program(s, source, parse, programSpec.output)
+            Program(name, source, parse, programSpec.output)
         }
     }
 }
 
-
 data class MemoryItem(
+    override val program: String,
     override val name: String,
     val data: ByteArray = ByteArray(0),
 ) : Item {
@@ -259,6 +270,7 @@ data class MemoryItem(
 
         other as MemoryItem
 
+        if (program != other.program) return false
         if (name != other.name) return false
         if (!data.contentEquals(other.data)) return false
 
@@ -266,7 +278,8 @@ data class MemoryItem(
     }
 
     override fun hashCode(): Int {
-        var result = name.hashCode()
+        var result = program.hashCode()
+        result = 31 * result + name.hashCode()
         result = 31 * result + data.contentHashCode()
         return result
     }
@@ -278,12 +291,13 @@ class FTPClientStub(
 ) : FTPConnector {
     constructor(connection: FTPConnection, vararg items: Item) : this(connection, items.toList())
 
-    override fun listFiles(): List<String> {
-        return items.toList().map(Item::name)
+    override fun listFiles(): Sequence<String> {
+        return items.asSequence().map(Item::name)
     }
 }
 
 infix fun Item.shouldMatch(item: MemoryItem) {
+    program shouldBe item.program
     name shouldBe item.name
     data() shouldBe item.data
 }
@@ -296,7 +310,7 @@ infix fun Collection<OutputItem>.shouldMatchItems(items: Collection<MemoryItem>)
 }
 
 infix fun Collection<OutputItem>.shouldMatch(items: Collection<OutputItem>) {
-    map { it.copy(item = MemoryItem(it.item.name, it.item.data())) } shouldBe items
+    map { it.copy(item = MemoryItem(it.item.program, it.item.name, it.item.data())) } shouldBe items
 }
 
 class TestHarness {
@@ -426,7 +440,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("item 1")
+        val item = MemoryItem("programName", "item 1")
 
         ftpConnector("fake.url", item)
 
@@ -448,8 +462,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("item 1")
-        val item2 = MemoryItem("item 2")
+        val item1 = MemoryItem("programName", "item 1")
+        val item2 = MemoryItem("programName", "item 2")
 
         ftpConnector("fake.url", item1, item2)
 
@@ -475,8 +489,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("item 1")
-        val item2 = MemoryItem("item 2")
+        val item1 = MemoryItem("program1", "item 1")
+        val item2 = MemoryItem("program2", "item 2")
 
         ftpConnector("fake.url", item1)
         ftpConnector("fake2.url", item2)
@@ -594,8 +608,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("this is the item we want with the special string")
-        val item2 = MemoryItem("some other random item")
+        val item1 = MemoryItem("programName", "this is the item we want with the special string")
+        val item2 = MemoryItem("programName", "some other random item")
 
         ftpConnector("fake.url", item1, item2)
 
@@ -617,8 +631,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("item 1")
-        val item2 = MemoryItem("item 2")
+        val item1 = MemoryItem("programName", "item 1")
+        val item2 = MemoryItem("programName", "item 2")
 
         ftpConnector("fake.url", item1, item2)
 
@@ -643,7 +657,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("item 1")
+        val item = MemoryItem("programName", "item 1")
 
         ftpConnector("fake.url", item)
 
@@ -667,7 +681,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("testfile.flac")
+        val item = MemoryItem("programName", "testfile.flac")
 
         ftpConnector("fake.url", item)
 
@@ -693,7 +707,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("testfile.wav")
+        val item = MemoryItem("programName", "testfile.wav")
 
         ftpConnector("fake.url", item)
 
@@ -719,7 +733,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("testfile.wav")
+        val item = MemoryItem("programName", "testfile.wav")
 
         ftpConnector("fake.url", item)
 
@@ -748,7 +762,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("testfile.wav")
+        val item = MemoryItem("programName", "testfile.wav")
 
         ftpConnector("fake.url", item)
 
@@ -782,7 +796,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("testfile.mp3")
+            val item = MemoryItem("programName", "testfile.mp3")
 
             ftpConnector("fake.url", item)
 
@@ -811,7 +825,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("testfile.mp3")
+            val item = MemoryItem("programName", "testfile.mp3")
 
             ftpConnector("fake.url", item)
 
@@ -839,7 +853,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("testfile.mp3")
+            val item = MemoryItem("programName", "testfile.mp3")
 
             ftpConnector("fake.url", item)
 
@@ -870,7 +884,8 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("AIL who cares what text goes here---the real title.flac")
+            val item =
+                MemoryItem("programName", "AIL who cares what text goes here---the real title.flac")
 
             ftpConnector("fake.url", item)
 
@@ -880,4 +895,46 @@ class FileSyncTest {
                 )
             }
         }
+
+    @Test
+    fun `should allow for date config given date config`() {
+        fileSyncTest {
+            config(
+                """
+            fileSync:
+              programs:
+                programName:
+                  source:
+                    type: Empty
+                  parse:
+                    regex: YEET
+                    dates:
+                      name: YY-MM-DD
+             """.trimIndent()
+            )
+        }
+    }
+
+    @Test
+    fun `should error given invalid date parse format`() {
+        val ex = shouldThrow<IllegalArgumentException> {
+            fileSyncTest {
+                config(
+                    """
+            fileSync:
+              programs:
+                programName:
+                  source:
+                    type: Empty
+                  parse:
+                    regex: YEET
+                    dates:
+                      name: INVALID FORMAT
+             """.trimIndent()
+                )
+            }
+        }
+
+        ex.message shouldBe "Unknown pattern letter: I"
+    }
 }
