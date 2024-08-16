@@ -61,17 +61,25 @@ data class ParsedItem(
 
     private val dateFormatSignatures = dates.keys.map { "{$it:" }
 
+    private fun String.replaceDate(found: Pair<Int, String>): String {
+        val (index, foundStr) = found
+        val foundName = foundStr.drop(1).dropLast(1)
+        val full = substring(index).substringBefore('}')
+        val format = full.substringAfter(':')
+        val date = dates[foundName]!!
+        val pattern = DateTimeFormatter.ofPattern(format)
+
+        return replace("{$foundName:$format}", date.format(pattern))
+    }
+
     fun interpolate(str: String): String {
-        val found = str.findAnyOf(dateFormatSignatures)
-        val dated = if (found != null) {
-            val (index, foundStr) = found
-            val foundName = foundStr.drop(1).dropLast(1)
-            val full = str.substring(index).substringBefore('}')
-            val format = full.substringAfter(':')
-            val date = dates[foundName]!!
-            val pattern = DateTimeFormatter.ofPattern(format)
-            str.replace("{$foundName:$format}", date.format(pattern))
-        } else str
+        var dated = str
+        var found: Pair<Int, String>?
+        while (true) {
+            found = dated.findAnyOf(dateFormatSignatures)
+            if (found == null) break
+            dated = dated.replaceDate(found)
+        }
 
         return replacements.entries.fold(dated) { acc, (key, value) ->
             acc.replace("{$key}", value)
@@ -1082,6 +1090,39 @@ class FileSyncTest {
 
             assert { results ->
                 results shouldMatch listOf(OutputItem(item, "2023-03-02"))
+            }
+        }
+    }
+
+    @Test
+    fun `should inject multiple formatted dates given many dates to parse`() {
+        fileSyncTest {
+            config(
+                """
+                    fileSync:
+                      programs:
+                        program:
+                          source:
+                            type: FTP
+                            url: fake.url
+                          parse:
+                            regex: file (?<date>\d+-\d+-\d+)
+                            dates:
+                              date: MM-dd-yy
+                          output:
+                            filename: "{date:yyyy-MM-dd} {date:yy-MM-dd}"
+                     """.trimIndent()
+            )
+
+            val item = MemoryItem(
+                "program",
+                "file 03-02-23",
+            )
+
+            ftpConnector("fake.url", item)
+
+            assert { results ->
+                results shouldMatch listOf(OutputItem(item, "2023-03-02 23-03-02"))
             }
         }
     }
