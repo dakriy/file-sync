@@ -1066,19 +1066,19 @@ class FileSyncTest {
         fileSyncTest {
             config(
                 """
-                    fileSync:
-                      programs:
-                        program:
-                          source:
-                            type: FTP
-                            url: fake.url
-                          parse:
-                            regex: file (?<date>\d+-\d+-\d+)
-                            dates:
-                              date: MM-dd-yy
-                          output:
-                            filename: "{date:yyyy-MM-dd}"
-                     """.trimIndent()
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+)
+                        dates:
+                          date: MM-dd-yy
+                      output:
+                        filename: "{date:yyyy-MM-dd}"
+                 """.trimIndent()
             )
 
             val item = MemoryItem(
@@ -1099,19 +1099,19 @@ class FileSyncTest {
         fileSyncTest {
             config(
                 """
-                    fileSync:
-                      programs:
-                        program:
-                          source:
-                            type: FTP
-                            url: fake.url
-                          parse:
-                            regex: file (?<date>\d+-\d+-\d+)
-                            dates:
-                              date: MM-dd-yy
-                          output:
-                            filename: "{date:yyyy-MM-dd} {date:yy-MM-dd}"
-                     """.trimIndent()
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+)
+                        dates:
+                          date: MM-dd-yy
+                      output:
+                        filename: "{date:yyyy-MM-dd} {date:yy-MM-dd}"
+                 """.trimIndent()
             )
 
             val item = MemoryItem(
