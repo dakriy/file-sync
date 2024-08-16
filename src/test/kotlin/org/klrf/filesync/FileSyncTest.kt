@@ -53,7 +53,7 @@ data class ParsedItem(
 ) : Item by item {
     private val nameAndExtension = nameAndExtension()
 
-    val replacements = mapOf(
+    private val replacements = mapOf(
         "old_filename" to nameAndExtension.first,
         "old_extension" to nameAndExtension.second,
         "raw_filename" to item.name,
@@ -141,7 +141,7 @@ data class Parse(
     val regex: Regex,
     val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
 ) {
-    val captureGroups by lazy {
+    private val captureGroups by lazy {
         val captureGroupRegex = """\(\?<(\w+)>""".toRegex()
         captureGroupRegex.findAll(regex.toString()).map { it.groupValues[1] }.toList()
     }
@@ -188,6 +188,7 @@ class FileSync(
                     if (program.parse == null) ParsedItem(item)
                     else program.parse.parse(item)
                 }
+                .take(program.output?.limit ?: Int.MAX_VALUE)
                 .map { item ->
                     val (name, extension) = item.nameAndExtension()
                     val format = program.output?.format ?: extension
@@ -234,6 +235,7 @@ data class Output(
     val format: String? = null,
     val filename: String? = null,
     val tags: Map<String, String> = emptyMap(),
+    val limit: Int? = null,
 )
 
 data class ParseSpec(
@@ -1123,6 +1125,43 @@ class FileSyncTest {
 
             assert { results ->
                 results shouldMatch listOf(OutputItem(item, "2023-03-02 23-03-02"))
+            }
+        }
+    }
+
+    @Test
+    fun `should only download last 5 configured files given limit of 5`() {
+        fileSyncTest {
+            config(
+                """
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                      parse:
+                        regex: item \d
+                      output:
+                        limit: 5
+                 """.trimIndent()
+            )
+
+            val items = (1..20).map { i ->
+                val j = i / 2
+                val otherText = if (i % 2 == 0) {
+                    "other "
+                } else ""
+                MemoryItem("program", "${otherText}item $j")
+            }
+
+            ftpConnector("fake.url", *items.toTypedArray())
+
+            assert { results ->
+                results shouldMatch items
+                    .filterIndexed { index, _ -> index % 2 == 0 }
+                    .take(5)
+                    .map { OutputItem(it, it.name) }
             }
         }
     }
