@@ -9,6 +9,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
@@ -42,6 +43,7 @@ import org.klrf.filesync.gateways.FileSyncTable.program
 data class MemoryItem(
     override val program: String,
     override val name: String,
+    override val createdAt: Instant = defaultTime,
     val data: ByteArray = ByteArray(0),
 ) : Item {
     override fun data(): ByteArray = data
@@ -54,6 +56,7 @@ data class MemoryItem(
 
         if (program != other.program) return false
         if (name != other.name) return false
+        if (createdAt != other.createdAt) return false
         if (!data.contentEquals(other.data)) return false
 
         return true
@@ -62,8 +65,13 @@ data class MemoryItem(
     override fun hashCode(): Int {
         var result = program.hashCode()
         result = 31 * result + name.hashCode()
+        result = 31 * result + createdAt.hashCode()
         result = 31 * result + data.contentHashCode()
         return result
+    }
+
+    companion object {
+        private val defaultTime = Instant.now()
     }
 }
 
@@ -73,8 +81,8 @@ class FTPClientStub(
 ) : FTPConnector {
     constructor(connection: FTPConnection, vararg items: Item) : this(connection, items.toList())
 
-    override fun listFiles(): Sequence<String> {
-        return items.asSequence().map(Item::name)
+    override fun listFiles(): Sequence<Pair<String, Instant>> {
+        return items.map { it.name to it.createdAt }.asSequence()
     }
 }
 
@@ -92,7 +100,7 @@ infix fun Collection<OutputItem>.shouldMatchItems(items: Collection<MemoryItem>)
 }
 
 infix fun Collection<OutputItem>.shouldMatch(items: Collection<OutputItem>) {
-    map { it.copy(item = MemoryItem(it.item.program, it.item.name, it.item.data())) } shouldBe items
+    map { it.copy(item = MemoryItem(it.item.program, it.item.name, it.item.createdAt, data = it.item.data())) } shouldBe items
 }
 
 class TestHarness {
@@ -1064,9 +1072,9 @@ class FileSyncTest {
             )
 
             val item1 = MemoryItem("program", "file 1")
-            val item2 = MemoryItem("program", "file 2", "file data".toByteArray())
+            val item2 = MemoryItem("program", "file 2", data = "file data".toByteArray())
             val item3 = MemoryItem("program", "file 3")
-            val item4 = MemoryItem("program", "file 4", "needs different data".toByteArray())
+            val item4 = MemoryItem("program", "file 4", data = "needs different data".toByteArray())
 
             ftpConnector("fake.url", item1, item2, item3, item4)
             history(item2, item4)
@@ -1077,6 +1085,32 @@ class FileSyncTest {
                     OutputItem(item3, item3.name),
                 )
             }
+        }
+    }
+
+    @Test
+    fun `should be ordered with newest first given oldest first`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                 """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file 1", Instant.now().minusSeconds(1000))
+        val item2 = MemoryItem("program", "file 2", Instant.now())
+
+        ftpConnector("fake.url", item1, item2)
+
+        assert { results ->
+            results shouldMatch listOf(
+                OutputItem(item2, item2.name),
+                OutputItem(item1, item1.name),
+            )
         }
     }
 }

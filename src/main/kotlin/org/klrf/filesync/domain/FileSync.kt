@@ -9,6 +9,7 @@ class FileSync(
 
         val items = input.programs().flatMap { program ->
             program.source.listItems()
+                .sortedByDescending { it.createdAt }
                 .mapNotNull { item ->
                     if (program.parse == null) ParsedItem(item)
                     else program.parse.parse(item)
@@ -27,6 +28,7 @@ class FileSync(
 
                     OutputItem(item, replacedFileName, format, replacedTags)
                 }
+                .toList()
         }
 
         output.save(items)

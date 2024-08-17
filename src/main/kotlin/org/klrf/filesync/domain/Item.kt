@@ -1,6 +1,7 @@
 package org.klrf.filesync.domain
 
 import java.security.MessageDigest
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -8,6 +9,8 @@ interface Item {
     val program: String
 
     val name: String
+
+    val createdAt: Instant
 
     fun data(): ByteArray
 
