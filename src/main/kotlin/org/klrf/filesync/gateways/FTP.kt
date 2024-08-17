@@ -1,6 +1,13 @@
 package org.klrf.filesync.gateways
 
+import java.io.IOException
+import java.io.InputStream
+import java.io.PrintWriter
 import java.time.Instant
+import org.apache.commons.net.PrintCommandListener
+import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.FTPFile
+import org.apache.commons.net.ftp.FTPReply
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.Source
 
@@ -8,7 +15,7 @@ interface FTPConnector {
     val connection: FTPConnection
 
     fun listFiles(): Sequence<Pair<String, Instant>>
-//    fun downloadFile(file: String): ByteArray
+    fun downloadFile(file: String): ByteArray
 }
 
 data class FTPConnection(
@@ -35,35 +42,46 @@ class FTPSource(
         return connector.listFiles().map(::FTPItem)
     }
 }
-//
-//class RealFTPConnector(
-//    override val connection: FTPConnection,
-//    private val debug: Boolean = false,
-//) : FTPConnector {
-//    override fun listFiles(): List<String> {
-//        val ftp = FTPClient()
-//
-//        if (debug) {
-//            ftp.addProtocolCommandListener(PrintCommandListener(PrintWriter(System.out)))
-//        }
-//
-//        ftp.connect(connection.url)
-//        val reply = ftp.replyCode
-//        if (FTPReply.isPositiveCompletion(reply)) {
-//            ftp.disconnect()
-//            throw IOException("Unable to connect to FTP server")
-//        }
-//
-//        val success = ftp.login(
-//            connection.username ?: "anonymous",
-//            connection.password ?: "anonymous@domain.com",
-//        )
-//        if (!success) {
-//            throw IOException("Unable to login to FTP server")
-//        }
-//
-//        val files = ftp.listFiles(connection.path)
-//
-//        TODO()
-//    }
-//}
+
+class RealFTPConnector(
+    override val connection: FTPConnection,
+    private val debug: Boolean = false,
+) : FTPConnector {
+    private fun <T> ftpAction(action: (FTPClient) -> T): T {
+        val ftp = FTPClient()
+
+        return AutoCloseable(ftp::disconnect).use {
+            if (debug) {
+                ftp.addProtocolCommandListener(PrintCommandListener(PrintWriter(System.out)))
+            }
+
+            ftp.connect(connection.url)
+            val reply = ftp.replyCode
+            if (FTPReply.isPositiveCompletion(reply)) {
+                ftp.disconnect()
+                throw IOException("Unable to connect to FTP server")
+            }
+
+            val success = ftp.login(
+                connection.username ?: "anonymous",
+                connection.password ?: "anonymous@domain.com",
+            )
+            if (!success) throw IOException("Unable to login to FTP server")
+
+            action(ftp)
+        }
+    }
+
+    override fun listFiles(): Sequence<Pair<String, Instant>> = ftpAction { ftp ->
+        val files = ftp.listFiles(connection.path)
+        files
+            .filter(FTPFile::isFile)
+            .map { it.name to it.timestampInstant }
+    }.asSequence()
+
+    override fun downloadFile(file: String): ByteArray = ftpAction { ftp ->
+        val path = connection.path ?: ""
+        ftp.retrieveFileStream("$path/$file")
+            .use(InputStream::readAllBytes)
+    }
+}
