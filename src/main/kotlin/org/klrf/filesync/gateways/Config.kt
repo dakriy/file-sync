@@ -4,6 +4,9 @@ import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.ConfigSpec
 import com.uchuhimo.konf.Feature
 import java.time.format.DateTimeFormatter
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.klrf.filesync.domain.InputGateway
 import org.klrf.filesync.domain.Output
 import org.klrf.filesync.domain.Parse
@@ -51,8 +54,18 @@ data class ProgramSpec(
     val output: Output? = null,
 )
 
+data class DatabaseSpec(
+    val url: String,
+    val user: String = "",
+    val password: String = "",
+)
+
 object FileSyncSpec : ConfigSpec() {
     val programs by optional<Map<String, ProgramSpec>>(emptyMap())
+
+    object HistorySpec : ConfigSpec() {
+        val db by optional<DatabaseSpec?>(null)
+    }
 }
 
 class ConfigInput(
@@ -66,6 +79,12 @@ class ConfigInput(
         .run(sourceConfig)
         .from.env()
         .from.systemProperties()
+
+    val db by lazy {
+        config[FileSyncSpec.HistorySpec.db]?.let {
+            Database.connect(it.url, user = it.user, password = it.password)
+        }
+    }
 
     override fun programs(): List<Program> {
         return config[FileSyncSpec.programs].map { (name, programSpec) ->
@@ -85,4 +104,12 @@ class ConfigInput(
             Program(name, source, parse, programSpec.output)
         }
     }
+
+    override fun history() =
+        db?.let { db ->
+            transaction(db) {
+                SchemaUtils.createMissingTablesAndColumns(FileSyncTable)
+            }
+            DatabaseHistory(db)
+        } ?: EmptyHistory
 }

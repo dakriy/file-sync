@@ -13,6 +13,11 @@ import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
 import org.intellij.lang.annotations.Language
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.klrf.filesync.domain.FileSync
 import org.klrf.filesync.gateways.FTPConnector
 import org.klrf.filesync.domain.Item
@@ -20,6 +25,10 @@ import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
 import org.klrf.filesync.gateways.ConfigInput
 import org.klrf.filesync.gateways.FTPConnection
+import org.klrf.filesync.gateways.FileSyncTable
+import org.klrf.filesync.gateways.FileSyncTable.hash
+import org.klrf.filesync.gateways.FileSyncTable.name
+import org.klrf.filesync.gateways.FileSyncTable.program
 
 //class FileOutput : Output {
 //    override suspend fun save(items: List<OutputItem>) {
@@ -90,9 +99,14 @@ class TestHarness {
     private var yaml: String = ""
     private val ftpConnectors = mutableListOf<FTPClientStub>()
     private var assertBlock: (List<OutputItem>) -> Unit = { }
+    private var history = mutableListOf<Item>()
 
     fun config(@Language("YAML") yaml: String) {
         this.yaml = yaml
+    }
+
+    fun history(vararg items: Item) {
+        history.addAll(items)
     }
 
     fun ftpConnector(url: String, vararg items: Item) {
@@ -119,9 +133,25 @@ class TestHarness {
             from.yaml.string(yaml)
         }
 
+        if (input.db != null && history.isNotEmpty()) {
+            transaction(input.db) {
+                FileSyncTable.batchInsert(history) { item ->
+                    this[program] = item.program
+                    this[hash] = item.hash()
+                    this[name] = item.name
+                }
+            }
+        }
+
         val outputGateway = OutputGateway { outputItems = it }
 
         FileSync(input, outputGateway).sync()
+
+        if (input.db != null && history.isNotEmpty()) {
+            transaction(input.db) {
+                FileSyncTable.deleteAll()
+            }
+        }
 
         val result = outputItems
         result.shouldNotBeNull()
@@ -933,5 +963,71 @@ class FileSyncTest {
         }
 
         ex.message shouldContain "Item in program did not match 'an item'"
+    }
+
+    @Test
+    fun `should create table if it does not exist`() {
+        fileSyncTest {
+            val dbUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+            config(
+                """
+                fileSync:
+                  history:
+                    db:
+                      url: $dbUrl
+                      user: ""
+                      password: ""
+                  programs:
+                    program:
+                      source:
+                        type: Empty
+                 """.trimIndent()
+            )
+
+            assert {
+                val db = Database.connect(dbUrl)
+                val results = transaction(db) {
+                    FileSyncTable.selectAll().toList()
+                }
+                results.shouldBeEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `should not download already downloaded files`() {
+        fileSyncTest {
+            val dbUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+            config(
+                """
+                fileSync:
+                  history:
+                    db:
+                      url: $dbUrl
+                      user: ""
+                      password: ""
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                 """.trimIndent()
+            )
+
+            val item1 = MemoryItem("program", "file 1")
+            val item2 = MemoryItem("program", "file 2", "file data".toByteArray())
+            val item3 = MemoryItem("program", "file 3")
+            val item4 = MemoryItem("program", "file 4", "needs different data".toByteArray())
+
+            ftpConnector("fake.url", item1, item2, item3, item4)
+            history(item2, item4)
+
+            assert { results ->
+                results shouldMatch listOf(
+                    OutputItem(item1, item1.name),
+                    OutputItem(item3, item3.name),
+                )
+            }
+        }
     }
 }

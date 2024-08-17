@@ -5,6 +5,8 @@ class FileSync(
     private val output: OutputGateway,
 ) {
     fun sync() {
+        val history = input.history()
+
         val items = input.programs().flatMap { program ->
             program.source.listItems()
                 .mapNotNull { item ->
@@ -12,6 +14,7 @@ class FileSync(
                     else program.parse.parse(item)
                 }
                 .take(program.output?.limit ?: Int.MAX_VALUE)
+                .filterNot(history::exists)
                 .map { item ->
                     val (name, extension) = item.nameAndExtension()
                     val format = program.output?.format ?: extension
