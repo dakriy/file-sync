@@ -922,9 +922,9 @@ class FileSyncTest {
             val items = (1..20).map { i ->
                 val j = i / 2
                 val otherText = if (i % 2 == 0) {
-                    "other "
-                } else ""
-                MemoryItem("program", "${otherText}item $j")
+                    "other"
+                } else "item"
+                MemoryItem("program", "$otherText $j")
             }
 
             ftpConnector("fake.url", *items.toTypedArray())
@@ -934,6 +934,32 @@ class FileSyncTest {
                     .filterIndexed { index, _ -> index % 2 == 0 }
                     .take(5)
                     .map { OutputItem(it, it.name) }
+            }
+        }
+    }
+
+    @Test
+    fun `should match partial by default`() = fileSyncTest {
+        fileSyncTest {
+            config(
+                """
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                      parse:
+                        regex: item
+                 """.trimIndent()
+            )
+
+            val item = MemoryItem("program", "an item")
+
+            ftpConnector("fake.url", item)
+
+            assert { results ->
+                results shouldMatch listOf(OutputItem(item, item.name))
             }
         }
     }

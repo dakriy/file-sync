@@ -17,8 +17,7 @@ data class Parse(
     }
 
     fun parse(item: Item): ParsedItem? {
-        val result =
-            regex.matchEntire(item.name)
+        val result = regex.find(item.name)
 
         if (result == null) {
             val message = "Item in ${item.program} did not match '${item.name}'"
