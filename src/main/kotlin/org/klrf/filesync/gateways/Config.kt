@@ -11,6 +11,7 @@ import org.klrf.filesync.domain.InputGateway
 import org.klrf.filesync.domain.Output
 import org.klrf.filesync.domain.Parse
 import org.klrf.filesync.domain.Program
+import org.klrf.filesync.domain.Source
 
 enum class SourceType {
     Empty,
@@ -74,7 +75,7 @@ class ConfigInput(
     private val ftpConnectorFactory: (FTPConnection) -> FTPConnector,
     sourceConfig: Config.() -> Config,
 ) : InputGateway {
-    val config = Config {
+    private val config = Config {
         addSpec(FileSyncSpec)
         enable(Feature.OPTIONAL_SOURCE_BY_DEFAULT)
     }
@@ -88,18 +89,21 @@ class ConfigInput(
         }
     }
 
+    private fun buildSource(name: String, sourceConfig: SourceSpec): Source {
+        val type = sourceConfig.type
+
+        return when (type) {
+            SourceType.Empty -> EmptySource
+            SourceType.FTP -> {
+                val ftpConnection = sourceConfig.toFTPConnection()
+                FTPSource(name, ftpConnectorFactory(ftpConnection))
+            }
+        }
+    }
+
     override fun programs(): List<Program> {
         return config[FileSyncSpec.programs].map { (name, programSpec) ->
-            val sourceConfig = programSpec.source
-            val type = sourceConfig.type
-
-            val source = when (type) {
-                SourceType.Empty -> EmptySource
-                SourceType.FTP -> {
-                    val ftpConnection = sourceConfig.toFTPConnection()
-                    FTPSource(name, ftpConnectorFactory(ftpConnection))
-                }
-            }
+            val source = buildSource(name, programSpec.source)
 
             val parse = programSpec.parse?.toParse()
 
