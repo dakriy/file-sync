@@ -940,7 +940,6 @@ class FileSyncTest {
 
     @Test
     fun `should match partial by default`() = fileSyncTest {
-        fileSyncTest {
             config(
                 """
                 fileSync:
@@ -961,6 +960,30 @@ class FileSyncTest {
             assert { results ->
                 results shouldMatch listOf(OutputItem(item, item.name))
             }
+    }
+
+    @Test
+    fun `should match full given match full in config`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                      parse:
+                        regex: item
+                        entireMatch: true
+                 """.trimIndent()
+        )
+
+        val item = MemoryItem("program", "an item")
+
+        ftpConnector("fake.url", item)
+
+        assert { results ->
+            results.shouldBeEmpty()
         }
     }
 

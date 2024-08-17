@@ -40,11 +40,13 @@ data class ParseSpec(
     val regex: String,
     val dates: Map<String, String> = emptyMap(),
     val strict: Boolean = false,
+    val entireMatch: Boolean = false,
 ) {
     fun toParse() = Parse(
         regex.toRegex(),
         dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) },
         strict,
+        entireMatch,
     )
 }
 

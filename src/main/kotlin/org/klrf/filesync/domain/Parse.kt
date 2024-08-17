@@ -8,6 +8,7 @@ data class Parse(
     val regex: Regex,
     val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
     val strict: Boolean,
+    val entireMatch: Boolean,
 ) {
     private val logger = KotlinLogging.logger { }
 
@@ -17,7 +18,7 @@ data class Parse(
     }
 
     fun parse(item: Item): ParsedItem? {
-        val result = regex.find(item.name)
+        val result = if (entireMatch) regex.matchEntire(item.name) else regex.find(item.name)
 
         if (result == null) {
             val message = "Item in ${item.program} did not match '${item.name}'"
