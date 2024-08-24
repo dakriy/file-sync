@@ -1,35 +1,21 @@
 package org.klrf.filesync
 
 import com.uchuhimo.konf.source.LoadException
-import com.uchuhimo.konf.source.yaml
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
-import org.intellij.lang.annotations.Language
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.klrf.filesync.domain.FileSync
-import org.klrf.filesync.gateways.FTPConnector
-import org.klrf.filesync.domain.Item
-import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
-import org.klrf.filesync.gateways.ConfigInput
 import org.klrf.filesync.gateways.FTPConnection
 import org.klrf.filesync.gateways.FileSyncTable
-import org.klrf.filesync.gateways.FileSyncTable.hash
-import org.klrf.filesync.gateways.FileSyncTable.name
-import org.klrf.filesync.gateways.FileSyncTable.program
 
 //class FileOutput : Output {
 //    override suspend fun save(items: List<OutputItem>) {
@@ -39,141 +25,6 @@ import org.klrf.filesync.gateways.FileSyncTable.program
 //        // audio normalization
 //    }
 //}
-
-data class MemoryItem(
-    override val program: String,
-    override val name: String,
-    override val createdAt: Instant = defaultTime,
-    val data: ByteArray = ByteArray(0),
-) : Item {
-    override fun data(): ByteArray = data
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as MemoryItem
-
-        if (program != other.program) return false
-        if (name != other.name) return false
-        if (createdAt != other.createdAt) return false
-        if (!data.contentEquals(other.data)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = program.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + createdAt.hashCode()
-        result = 31 * result + data.contentHashCode()
-        return result
-    }
-
-    companion object {
-        private val defaultTime = Instant.now()
-    }
-}
-
-class FTPClientStub(
-    override val connection: FTPConnection,
-    private val items: List<Item>,
-) : FTPConnector {
-    constructor(connection: FTPConnection, vararg items: Item) : this(connection, items.toList())
-
-    override fun listFiles(): Sequence<Pair<String, Instant>> {
-        return items.map { it.name to it.createdAt }.asSequence()
-    }
-
-    override fun downloadFile(file: String) = items.first { it.name == file }.data()
-}
-
-infix fun Item.shouldMatch(item: MemoryItem) {
-    program shouldBe item.program
-    name shouldBe item.name
-    data() shouldBe item.data
-}
-
-infix fun Collection<OutputItem>.shouldMatchItems(items: Collection<MemoryItem>) {
-    this shouldHaveSize items.size
-    zip(items).forEach { (outputItem, item) ->
-        outputItem.item shouldMatch item
-    }
-}
-
-infix fun Collection<OutputItem>.shouldMatch(items: Collection<OutputItem>) {
-    map { it.copy(item = MemoryItem(it.item.program, it.item.name, it.item.createdAt, data = it.item.data())) } shouldBe items
-}
-
-class TestHarness {
-    private var yaml: String = ""
-    private val ftpConnectors = mutableListOf<FTPClientStub>()
-    private var assertBlock: (List<OutputItem>) -> Unit = { }
-    private var history = mutableListOf<Item>()
-
-    fun config(@Language("YAML") yaml: String) {
-        this.yaml = yaml
-    }
-
-    fun history(vararg items: Item) {
-        history.addAll(items)
-    }
-
-    fun ftpConnector(url: String, vararg items: Item) {
-        val ftpClient = FTPClientStub(FTPConnection(url), *items)
-
-        ftpConnectors.add(ftpClient)
-    }
-
-    fun ftpConnector(vararg connectors: FTPClientStub) {
-        ftpConnectors.addAll(connectors)
-    }
-
-    fun assert(block: (List<OutputItem>) -> Unit) {
-        assertBlock = block
-    }
-
-    private fun findConnector(connection: FTPConnection): FTPConnector =
-        ftpConnectors.find { stub -> stub.connection == connection }
-            ?: error("An FTP connector was requested that was not defined in the test.")
-
-    fun execute() {
-        var outputItems: List<OutputItem>? = null
-        val input = ConfigInput(::findConnector) {
-            from.yaml.string(yaml)
-        }
-
-        if (input.db != null && history.isNotEmpty()) {
-            transaction(input.db) {
-                FileSyncTable.batchInsert(history) { item ->
-                    this[program] = item.program
-                    this[hash] = item.hash()
-                    this[name] = item.name
-                }
-            }
-        }
-
-        val outputGateway = OutputGateway { outputItems = it }
-
-        FileSync(input, outputGateway).sync()
-
-        if (input.db != null && history.isNotEmpty()) {
-            transaction(input.db) {
-                FileSyncTable.deleteAll()
-            }
-        }
-
-        val result = outputItems
-        result.shouldNotBeNull()
-        assertBlock(result)
-    }
-}
-
-fun fileSyncTest(block: TestHarness.() -> Unit) {
-    val harness = TestHarness()
-    harness.block()
-    harness.execute()
-}
 
 class FileSyncTest {
     @Test

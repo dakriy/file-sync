@@ -2,10 +2,10 @@ package org.klrf.filesync.domain
 
 class FileSync(
     private val input: InputGateway,
-    private val output: OutputGateway,
 ) {
     fun sync() {
         val history = input.history()
+        val output = input.output()
 
         val items = input.programs().flatMap { program ->
             program.source.listItems()

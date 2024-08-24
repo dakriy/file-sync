@@ -3,12 +3,14 @@ package org.klrf.filesync.gateways
 import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.ConfigSpec
 import com.uchuhimo.konf.Feature
+import java.nio.file.FileSystem
 import java.time.format.DateTimeFormatter
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.klrf.filesync.domain.InputGateway
 import org.klrf.filesync.domain.Output
+import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.Parse
 import org.klrf.filesync.domain.Program
 import org.klrf.filesync.domain.Source
@@ -70,13 +72,35 @@ object FileSyncSpec : ConfigSpec() {
         val db by optional<DatabaseSpec?>(null)
     }
 
-    object OutputSpec : ConfigSpec() {
-        val libreTimeUrl by optional<String?>(null)
+    val output by optional<OutputSpec>(OutputSpec())
+}
+
+data class OutputSpec(
+    val dir: String = "",
+    val enabled: Boolean = true,
+)
+
+fun interface OutputGatewayFactory {
+    fun build(config: OutputSpec): OutputGateway
+}
+
+fun interface FTPConnectorFactory {
+    fun build(connection: FTPConnection): FTPConnector
+}
+
+class DefaultOutputGatewayFactory(
+    private val fileSystem: FileSystem,
+) : OutputGatewayFactory {
+    override fun build(config: OutputSpec): OutputGateway {
+        return if (config.enabled) {
+            FileOutput(fileSystem.getPath(config.dir))
+        } else OutputGateway { }
     }
 }
 
 class ConfigInput(
-    private val ftpConnectorFactory: (FTPConnection) -> FTPConnector,
+    private val ftpConnectorFactory: FTPConnectorFactory,
+    private val outputGatewayFactory: OutputGatewayFactory,
     sourceConfig: Config.() -> Config,
 ) : InputGateway {
     private val config = Config {
@@ -100,7 +124,7 @@ class ConfigInput(
             SourceType.Empty -> EmptySource
             SourceType.FTP -> {
                 val ftpConnection = sourceConfig.toFTPConnection()
-                FTPSource(name, ftpConnectorFactory(ftpConnection))
+                FTPSource(name, ftpConnectorFactory.build(ftpConnection))
             }
         }
     }
@@ -122,4 +146,8 @@ class ConfigInput(
             }
             DatabaseHistory(db)
         } ?: EmptyHistory
+
+    override fun output(): OutputGateway {
+        return outputGatewayFactory.build(config[FileSyncSpec.output])
+    }
 }

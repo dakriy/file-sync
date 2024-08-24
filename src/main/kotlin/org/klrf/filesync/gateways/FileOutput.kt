@@ -1,28 +1,28 @@
 package org.klrf.filesync.gateways
 
-import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.attribute.FileTime
-import java.util.*
-import kotlinx.coroutines.runBlocking
-import net.bramp.ffmpeg.builder.FFmpegBuilder
-import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.TagOptionSingleton
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
+import kotlin.io.path.div
 
-class LibreTimeOutput (
-
+class FileOutput (
+    private val directory: Path,
 ) : OutputGateway {
     override fun save(items: List<OutputItem>) {
-        TODO("Not yet implemented")
+        Files.createDirectories(directory)
+        val programs = items.map { it.program }.distinct()
+        programs.forEach { program ->
+            Files.createDirectory(directory / program)
+        }
+
+        items.forEach { item ->
+            val file = directory / item.program / item.file
+            Files.createFile(file)
+            Files.write(file, item.data())
+            Files.setAttribute(file, "creationTime", FileTime.from(item.createdAt))
+        }
     }
 }
 

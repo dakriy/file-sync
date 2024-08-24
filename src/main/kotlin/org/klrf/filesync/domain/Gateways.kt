@@ -8,6 +8,7 @@ interface History {
 interface InputGateway {
     fun programs(): List<Program>
     fun history(): History
+    fun output(): OutputGateway
 }
 
 fun interface OutputGateway {
