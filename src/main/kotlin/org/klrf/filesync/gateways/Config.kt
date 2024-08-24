@@ -69,6 +69,10 @@ object FileSyncSpec : ConfigSpec() {
     object HistorySpec : ConfigSpec() {
         val db by optional<DatabaseSpec?>(null)
     }
+
+    object OutputSpec : ConfigSpec() {
+        val libreTimeUrl by optional<String?>(null)
+    }
 }
 
 class ConfigInput(

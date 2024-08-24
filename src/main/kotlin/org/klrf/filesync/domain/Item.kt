@@ -77,4 +77,8 @@ data class OutputItem(
     val fileName: String,
     val format: String = "mp3",
     val tags: Map<String, String> = emptyMap(),
-) : Item by item
+) : Item by item {
+    val file = "$fileName.$format"
+
+    override fun toString(): String = "$program/$fileName"
+}

@@ -27,8 +27,15 @@ dependencies {
     runtimeOnly(libs.slf4jSimple)
     runtimeOnly(libs.postgres)
 
+    implementation(libs.ktorClient)
+    implementation(libs.ktorClientJava)
+
+    implementation(libs.jaudiotagger)
+    implementation(libs.ffmpegWrapper)
+
     testImplementation(kotlin("test"))
     testImplementation(libs.kotestCore)
+    testImplementation(libs.jimFs)
     testRuntimeOnly(libs.h2)
 }
 

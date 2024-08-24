@@ -2,6 +2,7 @@
 exposed = "0.53.0"
 slf4j = "2.0.16"
 konf = "1.1.2"
+ktor = "2.3.12"
 
 [libraries]
 exposedCore = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "exposed" }
@@ -16,3 +17,8 @@ kotestCore = { group = "io.kotest", name = "kotest-assertions-core-jvm", version
 h2 = { group = "com.h2database", name = "h2", version = "2.2.224" }
 postgres = { group = "com.impossibl.pgjdbc-ng", name = "pgjdbc-ng", version = "0.8.9" }
 commons = { group = "commons-net", name = "commons-net", version = "3.11.1"}
+ktorClient = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktorClientJava = { group = "io.ktor", name = "ktor-client-java", version.ref = "ktor" }
+jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version = "3.0.1" }
+ffmpegWrapper = { group = "net.bramp.ffmpeg", name = "ffmpeg", version = "0.8.0" }
+jimFs = { group = "com.google.jimfs", name = "jimfs", version = "1.1" }
