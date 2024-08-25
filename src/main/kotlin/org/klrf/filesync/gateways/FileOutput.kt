@@ -1,27 +1,33 @@
 package org.klrf.filesync.gateways
 
-import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
+import kotlin.io.path.createDirectories
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
 import kotlin.io.path.div
+import kotlin.io.path.setAttribute
+import kotlin.io.path.writeBytes
 
-class FileOutput (
+class FileOutput(
     private val directory: Path,
 ) : OutputGateway {
     override fun save(items: List<OutputItem>) {
-        Files.createDirectories(directory)
         val programs = items.map { it.program }.distinct()
         programs.forEach { program ->
-            Files.createDirectory(directory / program)
+            (directory / program).createDirectories()
         }
 
         items.forEach { item ->
             val file = directory / item.program / item.file
-            Files.createFile(file)
-            Files.write(file, item.data())
-            Files.setAttribute(file, "creationTime", FileTime.from(item.createdAt))
+            file.writeBytes(
+                item.data(),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+            )
+            file.setAttribute("creationTime", FileTime.from(item.createdAt))
         }
     }
 }

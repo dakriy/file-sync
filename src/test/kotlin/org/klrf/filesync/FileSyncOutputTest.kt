@@ -11,9 +11,14 @@ import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import java.time.Instant
+import kotlin.io.path.createDirectories
+import kotlin.io.path.createFile
 import kotlin.io.path.div
 import kotlin.io.path.getAttribute
 import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.readAttributes
+import kotlin.io.path.readText
+import kotlin.io.path.writeBytes
 import kotlin.test.Test
 
 class FileSyncOutputTest {
@@ -29,24 +34,6 @@ class FileSyncOutputTest {
 
         assert {
             fs.getPath("").listDirectoryEntries().shouldBeEmpty()
-        }
-    }
-
-    @Test
-    fun `given no input files but an output path directory should be created`() = fileSyncTest {
-        config("""
-          fileSync:
-            output:
-              dir: /the/path/to/dest
-            programs:
-              program:
-                source:
-                  type: Empty
-        """.trimIndent())
-
-        assert {
-            val path = fs.getPath("/the/path/to/dest")
-            Files.exists(path).shouldBeTrue()
         }
     }
 
@@ -94,7 +81,7 @@ class FileSyncOutputTest {
             val path = fs.getPath("/the/path/to/dest/program")
             val file = path / "file 1.mp3"
             path.shouldContainFiles("file 1.mp3")
-            Files.readString(file) shouldBe contents
+            file.readText() shouldBe contents
         }
     }
 
@@ -122,8 +109,8 @@ class FileSyncOutputTest {
             val file1 = path / "file 1.mp3"
             val file2 = path / "file 2.mp3"
             path.shouldContainFiles("file 1.mp3", "file 2.mp3")
-            Files.readString(file1) shouldBe contents
-            Files.readString(file2) shouldBe contents
+            file1.readText() shouldBe contents
+            file2.readText() shouldBe contents
         }
     }
 
@@ -171,9 +158,32 @@ class FileSyncOutputTest {
 
         assert {
             val path = fs.getPath("/the/path/to/dest/program/file 1.mp3")
-            val attrs = Files.readAttributes(path, BasicFileAttributes::class.java)
-            println(createdAt.nano)
-            attrs.creationTime() shouldBe FileTime.from(createdAt.minusNanos(createdAt.nano.toLong()))
+            val attrs = path.readAttributes<BasicFileAttributes>()
+            attrs.creationTime() shouldBe FileTime.from(createdAt)
+        }
+    }
+
+    @Test
+    fun `should overwrite file given file that already exists`() = fileSyncTest {
+        config("""
+          fileSync:
+            programs:
+              program:
+                source:
+                  type: FTP
+                  url: fake.url
+        """.trimIndent())
+
+        val item1 = MemoryItem("program", "file", data = "new file data".toByteArray())
+        ftpConnector("fake.url", item1)
+        val path = fs.getPath("program")
+        path.createDirectories()
+        val file = path / "file.mp3"
+        file.createFile()
+        file.writeBytes("hello".toByteArray())
+
+        assert {
+            file.readText() shouldBe "new file data"
         }
     }
 }

@@ -92,5 +92,6 @@ class TestHarness {
         val result = outputItems
         result.shouldNotBeNull()
         assertBlock(result)
+        fs.close()
     }
 }
