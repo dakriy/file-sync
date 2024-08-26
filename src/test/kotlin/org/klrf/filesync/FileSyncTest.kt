@@ -5,6 +5,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldHave
 import io.kotest.matchers.string.shouldContain
 import java.time.Instant
 import java.time.format.DateTimeParseException
@@ -112,7 +113,7 @@ class FileSyncTest {
         ftpConnector("fake.url", item)
 
         assert { result ->
-            result shouldMatchItems listOf(item)
+            result shouldMatch listOf(item)
         }
     }
 
@@ -135,7 +136,7 @@ class FileSyncTest {
         ftpConnector("fake.url", item1, item2)
 
         assert { result ->
-            result shouldMatchItems listOf(item1, item2)
+            result shouldMatch listOf(item1, item2)
         }
     }
 
@@ -163,7 +164,7 @@ class FileSyncTest {
         ftpConnector("fake2.url", item2)
 
         assert { result ->
-            result shouldMatchItems listOf(item1, item2)
+            result shouldMatch listOf(item1, item2)
         }
     }
 
@@ -281,7 +282,7 @@ class FileSyncTest {
         ftpConnector("fake.url", item1, item2)
 
         assert { result ->
-            result shouldMatchItems listOf(item1)
+            result shouldMatch listOf(item1)
         }
     }
 
@@ -305,8 +306,8 @@ class FileSyncTest {
 
         assert { result ->
             result shouldMatch listOf(
-                OutputItem(item1, item1.name),
-                OutputItem(item2, item2.name),
+                TestOutputItem("programName/item 1.mp3"),
+                TestOutputItem("programName/item 2.mp3"),
             )
         }
     }
@@ -330,7 +331,7 @@ class FileSyncTest {
 
         assert { result ->
             result shouldMatch listOf(
-                OutputItem(item, item.name, "mp3"),
+                TestOutputItem("programName/item 1.mp3"),
             )
         }
     }
@@ -354,7 +355,7 @@ class FileSyncTest {
 
         assert { result ->
             result shouldMatch listOf(
-                OutputItem(item, "testfile", "flac"),
+                TestOutputItem("programName/testfile.flac"),
             )
         }
     }
@@ -380,7 +381,7 @@ class FileSyncTest {
 
         assert { result ->
             result shouldMatch listOf(
-                OutputItem(item, "testfile", "flac"),
+                TestOutputItem("programName/testfile.flac"),
             )
         }
     }
@@ -406,7 +407,7 @@ class FileSyncTest {
 
         assert { result ->
             result shouldMatch listOf(
-                OutputItem(item, "new file name", "wav"),
+                TestOutputItem("programName/new file name.wav"),
             )
         }
     }
@@ -441,7 +442,7 @@ class FileSyncTest {
             )
 
             result shouldMatch listOf(
-                OutputItem(item, "testfile", "wav", tags),
+                TestOutputItem("programName/testfile.wav", tags = tags),
             )
         }
     }
@@ -471,7 +472,7 @@ class FileSyncTest {
                 val tags = mapOf("comments" to "testfile")
 
                 result shouldMatch listOf(
-                    OutputItem(item, "testfile", "mp3", tags),
+                    TestOutputItem("programName/testfile.mp3", tags = tags),
                 )
             }
         }
@@ -498,7 +499,7 @@ class FileSyncTest {
 
             assert { result ->
                 result shouldMatch listOf(
-                    OutputItem(item, "OLD testfile"),
+                    TestOutputItem("programName/OLD testfile.mp3"),
                 )
             }
         }
@@ -528,7 +529,7 @@ class FileSyncTest {
                 val tags = mapOf("comments" to "testfile.mp3 testfile.mp3")
 
                 result shouldMatch listOf(
-                    OutputItem(item, "testfile", "mp3", tags),
+                    TestOutputItem("programName/testfile.mp3", tags = tags),
                 )
             }
         }
@@ -558,7 +559,7 @@ class FileSyncTest {
 
             assert { result ->
                 result shouldMatch listOf(
-                    OutputItem(item, "the real title", format = "flac"),
+                    TestOutputItem("programName/the real title.flac"),
                 )
             }
         }
@@ -727,7 +728,7 @@ class FileSyncTest {
             ftpConnector("fake.url", item)
 
             assert { results ->
-                results shouldMatch listOf(OutputItem(item, "2023-03-02"))
+                results shouldMatch listOf(TestOutputItem("program/2023-03-02.mp3"))
             }
         }
     }
@@ -760,7 +761,7 @@ class FileSyncTest {
             ftpConnector("fake.url", item)
 
             assert { results ->
-                results shouldMatch listOf(OutputItem(item, "2023-03-02 23-03-02"))
+                results shouldMatch listOf(TestOutputItem("program/2023-03-02 23-03-02.mp3"))
             }
         }
     }
@@ -797,7 +798,6 @@ class FileSyncTest {
                 results shouldMatch items
                     .filterIndexed { index, _ -> index % 2 == 0 }
                     .take(5)
-                    .map { OutputItem(it, it.name) }
             }
         }
     }
@@ -822,7 +822,7 @@ class FileSyncTest {
             ftpConnector("fake.url", item)
 
             assert { results ->
-                results shouldMatch listOf(OutputItem(item, item.name))
+                results shouldMatch listOf(item)
             }
     }
 
@@ -936,10 +936,7 @@ class FileSyncTest {
             history(item2, item4)
 
             assert { results ->
-                results shouldMatch listOf(
-                    OutputItem(item1, item1.name),
-                    OutputItem(item3, item3.name),
-                )
+                results shouldMatch listOf(item1, item3)
             }
         }
     }
@@ -963,10 +960,7 @@ class FileSyncTest {
         ftpConnector("fake.url", item1, item2)
 
         assert { results ->
-            results shouldMatch listOf(
-                OutputItem(item2, item2.name),
-                OutputItem(item1, item1.name),
-            )
+            results shouldMatch listOf(item2, item1)
         }
     }
 }

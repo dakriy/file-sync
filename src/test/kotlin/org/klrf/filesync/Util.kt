@@ -6,21 +6,37 @@ import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputItem
 
 
-infix fun Item.shouldMatch(item: MemoryItem) {
+infix fun Item.shouldMatch(item: Item) {
     program shouldBe item.program
     name shouldBe item.name
-    data() shouldBe item.data
+    data() shouldBe item.data()
+    createdAt shouldBe item.createdAt
 }
 
-infix fun Collection<OutputItem>.shouldMatchItems(items: Collection<MemoryItem>) {
-    this shouldHaveSize items.size
-    zip(items).forEach { (outputItem, item) ->
-        outputItem.item shouldMatch item
+class TestOutputItem(
+    val path: String,
+    val data: ByteArray = ByteArray(0),
+    val tags: Map<String, String> = emptyMap(),
+)
+
+infix fun OutputItem.shouldMatch(o: TestOutputItem) {
+    "$this.$format" shouldBe o.path
+    tags shouldBe o.tags
+    this.item.data() shouldBe o.data
+}
+
+infix fun Collection<OutputItem>.shouldMatch(items: Collection<TestOutputItem>) {
+    this.size shouldBe items.size
+    zip(items).forEach { (actual, expected) ->
+        actual shouldMatch expected
     }
 }
 
-infix fun Collection<OutputItem>.shouldMatch(items: Collection<OutputItem>) {
-    map { it.copy(item = MemoryItem(it.item.program, it.item.name, it.item.createdAt, data = it.item.data())) } shouldBe items
+@JvmName("shouldMatchItems")
+infix fun Collection<OutputItem>.shouldMatch(items: Collection<Item>) {
+    zip(items).forEach { (actual, expected) ->
+        actual shouldMatch expected
+    }
 }
 
 fun fileSyncTest(block: TestHarness.() -> Unit) {
