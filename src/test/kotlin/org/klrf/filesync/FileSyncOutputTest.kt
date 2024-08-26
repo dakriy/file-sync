@@ -181,6 +181,7 @@ class FileSyncOutputTest {
         val file = path / "file.mp3"
         file.createFile()
         file.writeBytes("hello".toByteArray())
+        file.toFile()
 
         assert {
             file.readText() shouldBe "new file data"

@@ -73,7 +73,7 @@ data class ParsedItem(
 }
 
 data class OutputItem(
-    val item: Item,
+    val item: ParsedItem,
     val fileName: String,
     val format: String = "mp3",
     val tags: Map<String, String> = emptyMap(),
