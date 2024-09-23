@@ -15,9 +15,6 @@ dependencies {
     implementation(libs.konfCore)
     implementation(libs.konfYaml)
 
-    implementation(libs.exposedCore)
-    runtimeOnly(libs.exposedJdbc)
-
     implementation(libs.kotlinLogger)
     implementation(libs.kotlinCoroutinesCore)
 
@@ -25,7 +22,6 @@ dependencies {
 
     implementation(libs.slf4j)
     runtimeOnly(libs.slf4jSimple)
-    runtimeOnly(libs.postgres)
 
     implementation(libs.ktorClient)
     implementation(libs.ktorClientJava)
@@ -37,7 +33,6 @@ dependencies {
     testImplementation(libs.mockFTPServer)
     testImplementation(libs.kotestCore)
     testImplementation(libs.jimFs)
-    testRuntimeOnly(libs.h2)
 }
 
 tasks {

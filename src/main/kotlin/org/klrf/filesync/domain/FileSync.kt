@@ -8,7 +8,6 @@ class FileSync(
     private val logger = KotlinLogging.logger { }
 
     fun sync() {
-        val history = input.history()
         val output = input.output()
 
         val items = input.programs().flatMap { program ->
@@ -20,7 +19,6 @@ class FileSync(
                         else program.parse.parse(item)
                     }
                     .take(program.output?.limit ?: Int.MAX_VALUE)
-                    .filterNot(history::exists)
                     .map { item ->
                         val (name, extension) = item.nameAndExtension()
                         val format = program.output?.format ?: extension
@@ -40,10 +38,6 @@ class FileSync(
             }
         }
 
-        val results = output.save(items)
-        history.add(results.success)
-        results.failed.forEach {
-            logger.error(it.second) { "Failed saving ${it.first}." }
-        }
+        output.save(items)
     }
 }

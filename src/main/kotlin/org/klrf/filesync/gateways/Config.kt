@@ -5,9 +5,6 @@ import com.uchuhimo.konf.ConfigSpec
 import com.uchuhimo.konf.Feature
 import java.nio.file.FileSystem
 import java.time.format.DateTimeFormatter
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.klrf.filesync.domain.*
 
 enum class SourceType {
@@ -54,18 +51,8 @@ data class ProgramSpec(
     val output: Output? = null,
 )
 
-data class DatabaseSpec(
-    val url: String,
-    val user: String = "",
-    val password: String = "",
-)
-
 object FileSyncSpec : ConfigSpec() {
     val programs by optional<Map<String, ProgramSpec>>(emptyMap())
-
-    object HistorySpec : ConfigSpec() {
-        val db by optional<DatabaseSpec?>(null)
-    }
 
     val output by optional<OutputSpec>(OutputSpec())
 }
@@ -89,7 +76,7 @@ class DefaultOutputGatewayFactory(
     override fun build(config: OutputSpec): OutputGateway {
         return if (config.enabled) {
             FileOutput(fileSystem.getPath(config.dir))
-        } else OutputGateway { SaveStatus(it, emptyList()) }
+        } else OutputGateway { }
     }
 }
 
@@ -105,12 +92,6 @@ class ConfigInput(
         .run(sourceConfig)
         .from.env()
         .from.systemProperties()
-
-    val db by lazy {
-        config[FileSyncSpec.HistorySpec.db]?.let {
-            Database.connect(it.url, user = it.user, password = it.password)
-        }
-    }
 
     private fun buildSource(name: String, sourceConfig: SourceSpec): Source {
         val type = sourceConfig.type
@@ -133,14 +114,6 @@ class ConfigInput(
             Program(name, source, parse, programSpec.output)
         }
     }
-
-    override fun history() =
-        db?.let { db ->
-            transaction(db) {
-                SchemaUtils.createMissingTablesAndColumns(FileSyncTable)
-            }
-            DatabaseHistory(db)
-        } ?: EmptyHistory
 
     override fun output(): OutputGateway {
         return outputGatewayFactory.build(config[FileSyncSpec.output])
