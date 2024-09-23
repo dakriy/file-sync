@@ -61,6 +61,8 @@ object FileSyncSpec : ConfigSpec() {
 
 data class OutputSpec(
     val dir: String = "output",
+    val ffmpegAudioFilter: String? = null,
+    val audioQuality: Double? = null,
     val enabled: Boolean = true,
 )
 
@@ -77,7 +79,7 @@ class DefaultOutputGatewayFactory(
 ) : OutputGatewayFactory {
     override fun build(config: OutputSpec): OutputGateway {
         return if (config.enabled) {
-            FileOutput(fileSystem.getPath(config.dir))
+            FileOutput(fileSystem.getPath(config.dir), config.ffmpegAudioFilter, config.audioQuality)
         } else OutputGateway { }
     }
 }

@@ -13,14 +13,24 @@ import org.klrf.filesync.domain.OutputItem
 
 class FileOutput(
     private val directory: Path,
+    private val ffmpegAudioFilter: String?,
+    private val audioQuality: Double?,
 ) : OutputGateway {
     private fun convert(input: Path, output: Path) {
+        // ffmpeg -y -i "$file" -q:a 1 -filter:a loudnorm=I=-23.0:offset=0.0:print_format=summary:linear=false:dual_mono=true "Processing$filename.mp3"
         val ffmpeg = FFmpeg()
 
         val builder = FFmpegBuilder().apply {
             setInput(input.absolutePathString())
             overrideOutputFiles(true)
-            addOutput(output.absolutePathString())
+            addOutput(output.absolutePathString()).apply {
+                if (audioQuality != null) {
+                    audio_quality = audioQuality
+                }
+                if (ffmpegAudioFilter != null) {
+                    audio_filter = ffmpegAudioFilter
+                }
+            }
         }
 
         FFmpegExecutor(ffmpeg).createJob(builder).run()
