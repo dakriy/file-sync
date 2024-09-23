@@ -11,7 +11,7 @@ class TestHarness {
     private var yaml: String = ""
     private val ftpConnectors = mutableListOf<FTPClientStub>()
     private var assertBlock: (List<OutputItem>) -> Unit = { }
-    val fs = Jimfs.newFileSystem()
+    var fs = Jimfs.newFileSystem()
 
     fun config(@Language("YAML") yaml: String) {
         this.yaml = yaml

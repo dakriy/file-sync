@@ -1,6 +1,7 @@
 package org.klrf.filesync
 
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.paths.shouldContainFile
 import io.kotest.matchers.paths.shouldContainFiles
 import io.kotest.matchers.shouldBe
 import java.nio.file.attribute.BasicFileAttributes
@@ -53,7 +54,7 @@ class FileOutputTest {
 
         assert {
             val path = fs.getPath("/the/path/to/dest/program")
-            path.shouldContainFiles("file 1.mp3")
+            path.shouldContainFiles("file 1")
         }
     }
 
@@ -77,8 +78,8 @@ class FileOutputTest {
 
         assert {
             val path = fs.getPath("/the/path/to/dest/program")
-            val file = path / "file 1.mp3"
-            path.shouldContainFiles("file 1.mp3")
+            val file = path / "file 1"
+            path shouldContainFile "file 1"
             file.readText() shouldBe contents
         }
     }
@@ -104,9 +105,9 @@ class FileOutputTest {
 
         assert {
             val path = fs.getPath("/the/path/to/dest/prog")
-            val file1 = path / "file 1.mp3"
-            val file2 = path / "file 2.mp3"
-            path.shouldContainFiles("file 1.mp3", "file 2.mp3")
+            val file1 = path / "file 1"
+            val file2 = path / "file 2"
+            path.shouldContainFiles("file 1", "file 2")
             file1.readText() shouldBe contents
             file2.readText() shouldBe contents
         }
@@ -155,7 +156,7 @@ class FileOutputTest {
         ftpConnector("fake.url", item1)
 
         assert {
-            val path = fs.getPath("/the/path/to/dest/program/file 1.mp3")
+            val path = fs.getPath("/the/path/to/dest/program/file 1")
             val attrs = path.readAttributes<BasicFileAttributes>()
             attrs.creationTime() shouldBe FileTime.from(createdAt)
         }
@@ -165,6 +166,8 @@ class FileOutputTest {
     fun `should overwrite file given file that already exists`() = fileSyncTest {
         config("""
           fileSync:
+            output:
+              dir: ""
             programs:
               program:
                 source:
@@ -176,7 +179,7 @@ class FileOutputTest {
         ftpConnector("fake.url", item1)
         val path = fs.getPath("program")
         path.createDirectories()
-        val file = path / "file.mp3"
+        val file = path / "file"
         file.createFile()
         file.writeBytes("hello".toByteArray())
 
@@ -184,4 +187,43 @@ class FileOutputTest {
             file.readText() shouldBe "new file data"
         }
     }
+
+    @Test
+    fun `default output directory is named output`() = fileSyncTest {
+        config("""
+          fileSync:
+            programs:
+              program:
+                source:
+                  type: FTP
+                  url: fake.url
+        """.trimIndent())
+
+        val item1 = MemoryItem("program", "file")
+        ftpConnector("fake.url", item1)
+
+        assert {
+            fs.getPath("output/program") shouldContainFile "file"
+        }
+    }
+
+//    @Test
+//    fun `should create transform directory for transforming files and directories`() = fileSyncTest {
+//        config("""
+//          fileSync:
+//            programs:
+//              program:
+//                source:
+//                  type: FTP
+//                  url: fake.url
+//        """.trimIndent())
+//
+//        val item1 = MemoryItem("program", "file", data = "new file data".toByteArray())
+//        ftpConnector("fake.url", item1)
+//        assert {
+//            val path = fs.getPath("transform")
+//            val attrs = path.readAttributes<BasicFileAttributes>()
+////            attrs.creationTime() shouldBe FileTime.from(createdAt)
+//        }
+//    }
 }

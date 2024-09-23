@@ -18,7 +18,7 @@ class FileOutput(
 
         items.map { item ->
             val ex = try {
-                val file = directory / item.program / item.file
+                val file = directory / item.program / item.name
                 file.writeBytes(
                     item.data(),
                     StandardOpenOption.CREATE,

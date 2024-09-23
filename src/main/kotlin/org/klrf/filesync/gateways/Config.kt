@@ -60,7 +60,7 @@ object FileSyncSpec : ConfigSpec() {
 }
 
 data class OutputSpec(
-    val dir: String = "",
+    val dir: String = "output",
     val enabled: Boolean = true,
 )
 
