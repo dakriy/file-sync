@@ -3,12 +3,9 @@ package org.klrf.filesync.gateways
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
-import kotlin.io.path.createDirectories
+import kotlin.io.path.*
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
-import kotlin.io.path.div
-import kotlin.io.path.setAttribute
-import kotlin.io.path.writeBytes
 
 class FileOutput(
     private val directory: Path,

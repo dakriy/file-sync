@@ -7,16 +7,8 @@ import org.intellij.lang.annotations.Language
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.klrf.filesync.domain.FileSync
-import org.klrf.filesync.domain.Item
-import org.klrf.filesync.domain.OutputGateway
-import org.klrf.filesync.domain.OutputItem
-import org.klrf.filesync.gateways.ConfigInput
-import org.klrf.filesync.gateways.DefaultOutputGatewayFactory
-import org.klrf.filesync.gateways.FTPConnection
-import org.klrf.filesync.gateways.FTPConnector
-import org.klrf.filesync.gateways.FileSyncTable
-import org.klrf.filesync.gateways.OutputGatewayFactory
+import org.klrf.filesync.domain.*
+import org.klrf.filesync.gateways.*
 
 class TestHarness {
     private var yaml: String = ""

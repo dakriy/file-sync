@@ -5,30 +5,16 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldHave
 import io.kotest.matchers.string.shouldContain
 import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
-import net.bramp.ffmpeg.FFmpeg
-import net.bramp.ffmpeg.builder.FFmpegBuilder
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.klrf.filesync.domain.OutputItem
 import org.klrf.filesync.gateways.FTPConnection
 import org.klrf.filesync.gateways.FileSyncTable
-
-//class FileOutput : Output {
-//    override suspend fun save(items: List<OutputItem>) {
-//        // write data to file
-//        // file convert
-//        // write ID3 tags
-//        // audio normalization
-//        // libretime upload
-//    }
-//}
 
 class FileSyncTest {
     @Test

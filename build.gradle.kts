@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.ffmpegWrapper)
 
     testImplementation(kotlin("test"))
+    testImplementation(libs.mockFTPServer)
     testImplementation(libs.kotestCore)
     testImplementation(libs.jimFs)
     testRuntimeOnly(libs.h2)

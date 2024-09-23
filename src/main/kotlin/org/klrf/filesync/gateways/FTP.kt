@@ -22,7 +22,8 @@ data class FTPConnection(
     val url: String,
     val username: String? = null,
     val password: String? = null,
-    val path: String? = null
+    val path: String? = null,
+    val port: Int = 21,
 )
 
 class FTPSource(
@@ -55,9 +56,9 @@ class RealFTPConnector(
                 ftp.addProtocolCommandListener(PrintCommandListener(PrintWriter(System.out)))
             }
 
-            ftp.connect(connection.url)
+            ftp.connect(connection.url, connection.port)
             val reply = ftp.replyCode
-            if (FTPReply.isPositiveCompletion(reply)) {
+            if (!FTPReply.isPositiveCompletion(reply)) {
                 ftp.disconnect()
                 throw IOException("Unable to connect to FTP server")
             }
@@ -81,7 +82,8 @@ class RealFTPConnector(
 
     override fun downloadFile(file: String): ByteArray = ftpAction { ftp ->
         val path = connection.path ?: ""
-        ftp.retrieveFileStream("$path/$file")
-            .use(InputStream::readAllBytes)
+        val stream = ftp.retrieveFileStream("$path/$file")
+            ?: throw IOException("File not found: $path/$file")
+        stream.use(InputStream::readAllBytes)
     }
 }

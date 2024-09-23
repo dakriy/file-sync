@@ -1,27 +1,25 @@
 package org.klrf.filesync
 
-import com.google.common.jimfs.Jimfs
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.paths.shouldBeAFile
 import io.kotest.matchers.paths.shouldContainFiles
-import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.shouldBe
-import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import java.time.Instant
-import kotlin.io.path.createDirectories
-import kotlin.io.path.createFile
-import kotlin.io.path.div
-import kotlin.io.path.getAttribute
-import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.readAttributes
-import kotlin.io.path.readText
-import kotlin.io.path.writeBytes
+import kotlin.io.path.*
 import kotlin.test.Test
 
-class FileSyncOutputTest {
+//class FileOutput : Output {
+//    override suspend fun save(items: List<OutputItem>) {
+//        // write data to file
+//        // file convert
+//        // write ID3 tags
+//        // audio normalization
+//        // libretime upload
+//    }
+//}
+
+class FileOutputTest {
     @Test
     fun `given no input no files should be output`() = fileSyncTest {
         config("""

@@ -8,12 +8,7 @@ import java.time.format.DateTimeFormatter
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.klrf.filesync.domain.InputGateway
-import org.klrf.filesync.domain.Output
-import org.klrf.filesync.domain.OutputGateway
-import org.klrf.filesync.domain.Parse
-import org.klrf.filesync.domain.Program
-import org.klrf.filesync.domain.Source
+import org.klrf.filesync.domain.*
 
 enum class SourceType {
     Empty,
