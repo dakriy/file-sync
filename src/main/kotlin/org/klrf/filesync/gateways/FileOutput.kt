@@ -4,36 +4,33 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
-import net.bramp.ffmpeg.FFmpeg
-import net.bramp.ffmpeg.FFmpegExecutor
-import net.bramp.ffmpeg.builder.FFmpegBuilder
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
 
 class FileOutput(
     private val directory: Path,
-    private val ffmpegAudioFilter: String?,
-    private val audioQuality: Double?,
+    private val ffmpegOptions: String?,
 ) : OutputGateway {
     private fun convert(input: Path, output: Path) {
-        // ffmpeg -y -i "$file" -q:a 1 -filter:a loudnorm=I=-23.0:offset=0.0:print_format=summary:linear=false:dual_mono=true "Processing$filename.mp3"
-        val ffmpeg = FFmpeg()
+        val ffmpegPath = System.getenv("FFMPEG") ?: "ffmpeg"
 
-        val builder = FFmpegBuilder().apply {
-            setInput(input.absolutePathString())
-            overrideOutputFiles(true)
-            addOutput(output.absolutePathString()).apply {
-                if (audioQuality != null) {
-                    audio_quality = audioQuality
-                }
-                if (ffmpegAudioFilter != null) {
-                    audio_filter = ffmpegAudioFilter
-                }
-            }
+        val options = ffmpegOptions?.split(" ")?.toTypedArray() ?: emptyArray()
+
+        val command = arrayOf(ffmpegPath, "-y", "-i", input.absolutePathString(), *options, output.absolutePathString())
+        val process = ProcessBuilder(*command)
+            .redirectErrorStream(true)
+            .start()
+
+        val output = process.inputStream.bufferedReader().use { reader ->
+            reader.lines().toList()
         }
 
-        FFmpegExecutor(ffmpeg).createJob(builder).run()
+        val exitCode = process.waitFor()
+
+        if (exitCode != 0) {
+            error("FFMPEG failed. Output: ${output.joinToString("\n")}")
+        }
     }
 
     private fun setCreationTime(path: Path, item: Item) {
@@ -77,6 +74,7 @@ class FileOutput(
             } catch (ex: Throwable) {
                 ex
             }
+            if (ex != null) throw ex
             item to ex
         }
 

@@ -27,7 +27,6 @@ dependencies {
     implementation(libs.ktorClientJava)
 
     implementation(libs.jaudiotagger)
-    implementation(libs.ffmpegWrapper)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.mockFTPServer)

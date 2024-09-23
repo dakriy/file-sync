@@ -15,6 +15,5 @@ commons = { group = "commons-net", name = "commons-net", version = "3.11.1"}
 ktorClient = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktorClientJava = { group = "io.ktor", name = "ktor-client-java", version.ref = "ktor" }
 jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version = "3.0.1" }
-ffmpegWrapper = { group = "net.bramp.ffmpeg", name = "ffmpeg", version = "0.8.0" }
 jimFs = { group = "com.google.jimfs", name = "jimfs", version = "1.1" }
 mockFTPServer = { group = "org.mockftpserver", name = "MockFtpServer", version = "3.2.0"}
