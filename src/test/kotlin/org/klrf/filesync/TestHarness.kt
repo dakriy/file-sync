@@ -60,7 +60,9 @@ class TestHarness {
             result.shouldNotBeNull()
             assertBlock(result)
         } finally {
-            fs.close()
+            try {
+                fs.close()
+            } catch (_: UnsupportedOperationException) {}
         }
     }
 }

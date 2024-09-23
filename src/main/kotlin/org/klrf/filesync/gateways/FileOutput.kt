@@ -4,16 +4,25 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
+import net.bramp.ffmpeg.FFmpeg
+import net.bramp.ffmpeg.FFmpegExecutor
+import net.bramp.ffmpeg.builder.FFmpegBuilder
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
 
 class FileOutput(
     private val directory: Path,
 ) : OutputGateway {
+    private fun convert() {
+
+    }
+
     override fun save(items: List<OutputItem>) {
         val programs = items.map { it.program }.distinct()
+        val transformDir = directory / "transform"
         programs.forEach { program ->
             (directory / program).createDirectories()
+            (transformDir / program).createDirectories()
         }
 
         items.map { item ->
@@ -26,6 +35,21 @@ class FileOutput(
                     StandardOpenOption.TRUNCATE_EXISTING,
                 )
                 file.setAttribute("creationTime", FileTime.from(item.createdAt))
+
+
+                val outFile = transformDir / item.program / item.file
+                if (item.format != item.computeFormatFromName()) {
+                    val ffmpeg = FFmpeg()
+
+                    val builder = FFmpegBuilder().apply {
+                        setInput(file.absolutePathString())
+                        overrideOutputFiles(true)
+                        addOutput(outFile.absolutePathString())
+                    }
+
+                    FFmpegExecutor(ffmpeg).createJob(builder).run()
+                } else file.copyTo(outFile)
+
                 null
             } catch (ex: Throwable) {
                 ex
