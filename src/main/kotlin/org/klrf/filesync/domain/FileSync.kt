@@ -12,7 +12,7 @@ class FileSync(
 
         val items = input.programs().flatMap { program ->
             try {
-                program.source.listItems()
+                val items = program.source.listItems()
                     .sortedByDescending { it.createdAt }
                     .mapNotNull { item ->
                         if (program.parse == null) ParsedItem(item)
@@ -32,7 +32,15 @@ class FileSync(
                         OutputItem(item, replacedFileName, format, replacedTags)
                     }
                     .toList()
+
+                if (items.isEmpty()) {
+                    logger.warn { "No items to download for $program." }
+                }
+
+                items
             } catch (e: Throwable) {
+                if (input.stopOnFailure) throw e
+
                 logger.error(e) { "Failed sourcing from $program." }
                 emptyList()
             }

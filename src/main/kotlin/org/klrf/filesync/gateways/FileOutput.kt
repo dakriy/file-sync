@@ -33,7 +33,7 @@ class FileOutput(
             item to ex
         }
 
-        // Download
+        // Download -- DONE
         // FFMPEG to convert
         // FFMPEG audio normalization
         // ffmpeg -y -i "$file" -q:a 1 -filter:a loudnorm=I=-23.0:offset=0.0:print_format=summary:linear=false:dual_mono=true "Processing$filename.mp3"

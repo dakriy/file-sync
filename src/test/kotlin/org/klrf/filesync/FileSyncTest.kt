@@ -595,6 +595,7 @@ class FileSyncTest {
                 config(
                     """
                     fileSync:
+                      stopOnFailure: true
                       programs:
                         program:
                           source:
@@ -626,6 +627,7 @@ class FileSyncTest {
                 config(
                     """
                     fileSync:
+                      stopOnFailure: true
                       programs:
                         program:
                           source:
@@ -657,6 +659,7 @@ class FileSyncTest {
                 config(
                     """
                     fileSync:
+                      stopOnFailure: true
                       programs:
                         program:
                           source:
@@ -840,6 +843,7 @@ class FileSyncTest {
                 config(
                     """
                 fileSync:
+                  stopOnFailure: true
                   programs:
                     program:
                       source:

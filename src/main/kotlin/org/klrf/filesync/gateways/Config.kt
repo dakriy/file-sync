@@ -55,6 +55,8 @@ object FileSyncSpec : ConfigSpec() {
     val programs by optional<Map<String, ProgramSpec>>(emptyMap())
 
     val output by optional<OutputSpec>(OutputSpec())
+
+    val stopOnFailure by optional<Boolean?>(null)
 }
 
 data class OutputSpec(
@@ -92,6 +94,8 @@ class ConfigInput(
         .run(sourceConfig)
         .from.env()
         .from.systemProperties()
+
+    override val stopOnFailure: Boolean = config[FileSyncSpec.stopOnFailure] ?: false
 
     private fun buildSource(name: String, sourceConfig: SourceSpec): Source {
         val type = sourceConfig.type
