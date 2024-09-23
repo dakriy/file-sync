@@ -7,14 +7,42 @@ import kotlin.io.path.*
 import net.bramp.ffmpeg.FFmpeg
 import net.bramp.ffmpeg.FFmpegExecutor
 import net.bramp.ffmpeg.builder.FFmpegBuilder
+import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
 
 class FileOutput(
     private val directory: Path,
 ) : OutputGateway {
-    private fun convert() {
+    private fun convert(input: Path, output: Path) {
+        val ffmpeg = FFmpeg()
 
+        val builder = FFmpegBuilder().apply {
+            setInput(input.absolutePathString())
+            overrideOutputFiles(true)
+            addOutput(output.absolutePathString())
+        }
+
+        FFmpegExecutor(ffmpeg).createJob(builder).run()
+    }
+
+    private fun setCreationTime(path: Path, item: Item) {
+        val fileTime = FileTime.from(item.createdAt)
+        path.setAttribute("creationTime", fileTime)
+        path.setLastModifiedTime(fileTime)
+    }
+
+    fun download(item: Item): Path {
+        val file = directory / item.program / item.name
+        file.writeBytes(
+            item.data(),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+        )
+        setCreationTime(file, item)
+
+        return file
     }
 
     override fun save(items: List<OutputItem>) {
@@ -27,28 +55,13 @@ class FileOutput(
 
         items.map { item ->
             val ex = try {
-                val file = directory / item.program / item.name
-                file.writeBytes(
-                    item.data(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.WRITE,
-                    StandardOpenOption.TRUNCATE_EXISTING,
-                )
-                file.setAttribute("creationTime", FileTime.from(item.createdAt))
-
+                val file = download(item)
 
                 val outFile = transformDir / item.program / item.file
                 if (item.format != item.computeFormatFromName()) {
-                    val ffmpeg = FFmpeg()
-
-                    val builder = FFmpegBuilder().apply {
-                        setInput(file.absolutePathString())
-                        overrideOutputFiles(true)
-                        addOutput(outFile.absolutePathString())
-                    }
-
-                    FFmpegExecutor(ffmpeg).createJob(builder).run()
+                    convert(file, outFile)
                 } else file.copyTo(outFile)
+                setCreationTime(outFile, item)
 
                 null
             } catch (ex: Throwable) {

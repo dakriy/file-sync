@@ -12,6 +12,7 @@ import java.nio.file.FileSystems
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlin.io.path.*
 import kotlin.test.Test
 
@@ -167,7 +168,7 @@ class FileOutputTest {
         )
 
         val createdAt = Instant.now().minusSeconds(100)
-            .let { it.minusNanos(it.nano.toLong()) }
+            .truncatedTo(ChronoUnit.SECONDS)
 
         val item1 = MemoryItem("program", "file 1", createdAt)
         ftpConnector("fake.url", item1)
@@ -296,9 +297,12 @@ class FileOutputTest {
                       format: mp3
             """.trimIndent()
             )
+            val createdAt = Instant.now().minus(10, ChronoUnit.DAYS)
+                .truncatedTo(ChronoUnit.SECONDS)
             val item1 = MemoryItem(
                 "program", "test.ogg", data =
-                this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!.readBytes()
+                this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!.readBytes(),
+                createdAt = createdAt,
             )
             ftpConnector("fake.url", item1)
 
@@ -318,6 +322,9 @@ class FileOutputTest {
                 }") {
                     matchesMp3Format.shouldBeTrue()
                 }
+
+                val attrs = file.readAttributes<BasicFileAttributes>()
+                attrs.lastModifiedTime() shouldBe FileTime.from(createdAt)
             }
         }
     } finally {
