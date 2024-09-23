@@ -928,6 +928,69 @@ class FileSyncTest {
     }
 
     @Test
+    fun `should add successfully saved files to history`() = fileSyncTest {
+        val dbUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+        config(
+            """
+                fileSync:
+                  history:
+                    db:
+                      url: $dbUrl
+                      user: ""
+                      password: ""
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                 """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file 1")
+        ftpConnector("fake.url", item1)
+        assert { results ->
+            val tableData = transaction {
+                FileSyncTable.selectAll().map { it[FileSyncTable.program] to it[FileSyncTable.name] }
+            }
+
+            tableData shouldBe listOf("program" to "file 1")
+        }
+    }
+
+    @Test
+    fun `should not add files that failed to save to history`() = fileSyncTest {
+        val dbUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+        config(
+            """
+                fileSync:
+                  history:
+                    db:
+                      url: $dbUrl
+                      user: ""
+                      password: ""
+                  programs:
+                    program:
+                      source:
+                        type: FTP
+                        url: fake.url
+                 """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file 1", dataHook = { error("this file failed") })
+        val item2 = MemoryItem("program", "file 2", data = "file data".toByteArray())
+        val item3 = MemoryItem("program", "file 3", dataHook = { error("this file failed") })
+        val item4 = MemoryItem("program", "file 4", data = "needs different data".toByteArray())
+        ftpConnector("fake.url", item1, item2, item3, item4)
+        assert { results ->
+            val tableData = transaction {
+                FileSyncTable.selectAll().map { it[FileSyncTable.program] to it[FileSyncTable.name] }
+            }
+
+            tableData shouldBe listOf("program" to "file 2", "program" to "file 4")
+        }
+    }
+
+    @Test
     fun `should be ordered with newest first given oldest first`() = fileSyncTest {
         config(
             """

@@ -1,5 +1,5 @@
 [versions]
-exposed = "0.53.0"
+exposed = "0.54.0"
 slf4j = "2.0.16"
 konf = "1.1.2"
 ktor = "2.3.12"

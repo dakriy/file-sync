@@ -8,8 +8,9 @@ data class MemoryItem(
     override val name: String,
     override val createdAt: Instant = defaultTime,
     val data: ByteArray = ByteArray(0),
+    private val dataHook: () -> Unit = {},
 ) : Item {
-    override fun data(): ByteArray = data
+    override fun data(): ByteArray = data.also { dataHook() }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

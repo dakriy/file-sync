@@ -6,26 +6,49 @@ import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
+import org.klrf.filesync.domain.SaveStatus
 
 class FileOutput(
     private val directory: Path,
 ) : OutputGateway {
-    override fun save(items: List<OutputItem>) {
+    override fun save(items: List<OutputItem>): SaveStatus {
         val programs = items.map { it.program }.distinct()
         programs.forEach { program ->
             (directory / program).createDirectories()
         }
 
-        items.forEach { item ->
-            val file = directory / item.program / item.file
-            file.writeBytes(
-                item.data(),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.TRUNCATE_EXISTING,
-            )
-            file.setAttribute("creationTime", FileTime.from(item.createdAt))
+        val results = items.map { item ->
+            val ex = try {
+                val file = directory / item.program / item.file
+                file.writeBytes(
+                    item.data(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                )
+                file.setAttribute("creationTime", FileTime.from(item.createdAt))
+                null
+            } catch (ex: Throwable) {
+                ex
+            }
+            item to ex
         }
+
+        // Download
+        // FFMPEG to convert
+        // FFMPEG audio normalization
+        // ffmpeg -y -i "$file" -q:a 1 -filter:a loudnorm=I=-23.0:offset=0.0:print_format=summary:linear=false:dual_mono=true "Processing$filename.mp3"
+        // tag audio
+        // LibreTime upload
+
+        //
+
+        val (successful, failed) = results.partition { it.second == null }
+
+        return SaveStatus(
+            successful.map { it.first },
+            failed.map { it.first to it.second!! },
+        )
     }
 }
 

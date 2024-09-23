@@ -1,6 +1,5 @@
 package org.klrf.filesync.domain
 
-import java.security.MessageDigest
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -22,12 +21,6 @@ interface Item {
         val name = name.substringBeforeLast('.')
         val extension = computeFormatFromName()
         return name to extension
-    }
-
-    fun hash(): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(data())
-        return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
 }
 

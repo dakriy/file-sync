@@ -47,9 +47,7 @@ class TestHarness {
         var outputItems: List<OutputItem>? = null
 
         val outputFactory = OutputGatewayFactory { spec ->
-            val gateway = DefaultOutputGatewayFactory(
-                fs,
-            ).build(spec)
+            val gateway = DefaultOutputGatewayFactory(fs).build(spec)
 
             val outputGateway = OutputGateway {
                 outputItems = it
@@ -67,7 +65,6 @@ class TestHarness {
             transaction(input.db) {
                 FileSyncTable.batchInsert(history) { item ->
                     this[FileSyncTable.program] = item.program
-                    this[FileSyncTable.hash] = item.hash()
                     this[FileSyncTable.name] = item.name
                 }
             }
@@ -75,15 +72,17 @@ class TestHarness {
 
         FileSync(input).sync()
 
-        if (input.db != null && history.isNotEmpty()) {
-            transaction(input.db) {
-                FileSyncTable.deleteAll()
+        try {
+            val result = outputItems
+            result.shouldNotBeNull()
+            assertBlock(result)
+        } finally {
+            fs.close()
+            if (input.db != null && history.isNotEmpty()) {
+                transaction(input.db) {
+                    FileSyncTable.deleteAll()
+                }
             }
         }
-
-        val result = outputItems
-        result.shouldNotBeNull()
-        assertBlock(result)
-        fs.close()
     }
 }

@@ -89,7 +89,7 @@ class DefaultOutputGatewayFactory(
     override fun build(config: OutputSpec): OutputGateway {
         return if (config.enabled) {
             FileOutput(fileSystem.getPath(config.dir))
-        } else OutputGateway { }
+        } else OutputGateway { SaveStatus(it, emptyList()) }
     }
 }
 

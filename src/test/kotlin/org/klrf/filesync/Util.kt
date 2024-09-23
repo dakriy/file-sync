@@ -1,6 +1,5 @@
 package org.klrf.filesync
 
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputItem
