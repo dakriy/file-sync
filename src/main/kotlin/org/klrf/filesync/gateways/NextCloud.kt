@@ -19,11 +19,11 @@ val audioFileExtensions = listOf(
     "webm",
 )
 
-class NextCloudSource(
+data class NextCloudSource(
     private val url: String,
     private val path: String,
     private val username: String,
-    private val password: String,
+    private val password: String?,
     private val depth: Int,
     private val program: String,
 ) : Source {

@@ -88,23 +88,98 @@ class SourceFactoryTest {
             )
         }
 
-//    @Test
-//    fun `should be able to download programs hosted on nextcloud`() = fileSyncTest {
-//        config(
-//            """
-//                fileSync:
-//                  programs:
-//                    program:
-//                      source:
-//                        type: NextCloud
-//                        url: fake.url
-//                 """.trimIndent()
-//        )
-//
-//        val item1 = MemoryItem("program", "file 1")
-//        nextCloudConnector("fake.url", item1)
-//        assert { results ->
-//            results shouldMatch listOf(item1)
-//        }
-//    }
+    @Test
+    fun `should resolve nextcloud source`() =
+        inputTest(
+            """
+            fileSync:
+              programs:
+                - name: nextCloud
+                  source:
+                    type: NextCloud
+                    url: my.nexcloud.instance
+                    username: user
+                    password: pass
+                    path: /the/nextcloud/path
+                    depth: 10
+            """.trimIndent()
+        ) {
+            programs().first().source shouldBe NextCloudSource(
+                url = "my.nexcloud.instance",
+                path = "/the/nextcloud/path",
+                username = "user",
+                password = "pass",
+                depth = 10,
+                program = "nextCloud",
+            )
+        }
+
+    @Test
+    fun `url is required for nextcloud`() {
+        val ex = shouldThrow<IllegalStateException> {
+            inputTest(
+                """
+            fileSync:
+              programs:
+                - name: nextCloud
+                  source:
+                    type: NextCloud
+                    username: user
+                    password: pass
+                    path: /the/nextcloud/path
+                    depth: 10
+            """.trimIndent()
+            ) {
+                programs().first().source
+            }
+        }
+
+        ex.message shouldBe "The 'url' field is required for a NextCloud source."
+    }
+
+    @Test
+    fun `path is required for NextCloud`() {
+        val ex = shouldThrow<IllegalStateException> {
+            inputTest(
+                """
+            fileSync:
+              programs:
+                - name: nextCloud
+                  source:
+                    type: NextCloud
+                    url: my.nexcloud.instance
+                    username: user
+                    password: pass
+                    depth: 10
+            """.trimIndent()
+            ) {
+                programs().first().source
+            }
+        }
+
+        ex.message shouldBe "The 'path' field is required for a NextCloud source."
+    }
+
+    @Test
+    fun `username is required for NextCloud`() {
+        val ex = shouldThrow<IllegalStateException> {
+            inputTest(
+                """
+            fileSync:
+              programs:
+                - name: nextCloud
+                  source:
+                    type: NextCloud
+                    url: my.nexcloud.instance
+                    password: pass
+                    path: /the/nextcloud/path
+                    depth: 10
+            """.trimIndent()
+            ) {
+                programs().first().source
+            }
+        }
+
+        ex.message shouldBe "The 'username' field is required for a NextCloud source."
+    }
 }

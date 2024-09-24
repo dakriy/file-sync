@@ -10,7 +10,7 @@ import org.klrf.filesync.domain.*
 enum class SourceType {
     Empty,
     FTP,
-//    NextCloud,
+    NextCloud,
 //    Custom,
 }
 
@@ -22,6 +22,7 @@ data class SourceSpec(
     val password: String? = null,
     val path: String? = null,
     val port: Int? = null,
+    val depth: Int = 1,
 //    val customSource: String? = null,
 ) {
     fun toFTPConnection() = FTPConnection(
@@ -87,6 +88,14 @@ object DefaultSourceFactory : SourceFactory {
                 val ftpConnection = spec.toFTPConnection()
                 FTPSource(program, ftpConnection)
             }
+            SourceType.NextCloud -> NextCloudSource(
+                spec.url ?: error("The 'url' field is required for a NextCloud source."),
+                spec.path ?: error("The 'path' field is required for a NextCloud source."),
+                spec.username ?: error("The 'username' field is required for a NextCloud source."),
+                spec.password,
+                spec.depth,
+                program,
+            )
         }
     }
 }
