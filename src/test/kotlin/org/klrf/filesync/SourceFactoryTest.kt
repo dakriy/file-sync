@@ -84,6 +84,7 @@ class SourceFactoryTest {
                     username = "user",
                     password = "pass",
                     path = "/the/ftp/path",
+                    port = 21,
                 )
             )
         }

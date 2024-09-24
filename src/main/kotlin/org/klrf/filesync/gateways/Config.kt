@@ -24,14 +24,7 @@ data class SourceSpec(
     val port: Int? = null,
     val depth: Int = 1,
     val `class`: String? = null,
-) {
-    fun toFTPConnection() = FTPConnection(
-        url ?: error("The 'url' field is required for a FTP source."),
-        username,
-        password,
-        path,
-    )
-}
+)
 
 data class ParseSpec(
     val regex: String,
@@ -85,8 +78,13 @@ object DefaultSourceFactory : SourceFactory {
         return when (type) {
             SourceType.Empty -> EmptySource
             SourceType.FTP -> {
-                val ftpConnection = spec.toFTPConnection()
-                FTPSource(program, ftpConnection)
+                FTPSource(program, FTPConnection(
+                    spec.url ?: error("The 'url' field is required for a FTP source."),
+                    spec.username,
+                    spec.password,
+                    spec.path,
+                    spec.port ?: 21,
+                ))
             }
 
             SourceType.NextCloud -> NextCloudSource(

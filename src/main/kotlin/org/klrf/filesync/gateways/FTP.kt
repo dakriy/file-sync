@@ -17,7 +17,7 @@ data class FTPConnection(
     val username: String? = null,
     val password: String? = null,
     val path: String? = null,
-    val port: Int = 21,
+    val port: Int,
 )
 
 data class FTPSource(
