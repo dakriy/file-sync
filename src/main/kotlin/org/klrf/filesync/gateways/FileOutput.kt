@@ -5,7 +5,9 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.TagOptionSingleton
@@ -65,7 +67,7 @@ class FileOutput(
         path.setLastModifiedTime(fileTime)
     }
 
-    suspend fun download(item: Item): Path = withContext(Dispatchers.IO) {
+    suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
         file.writeBytes(
             item.data(),
@@ -75,7 +77,7 @@ class FileOutput(
         )
         setCreationTime(file, item)
 
-        file
+        return file
     }
 
     private fun addAudioTags(item: OutputItem, path: Path) {
@@ -111,6 +113,11 @@ class FileOutput(
     }
 
     private suspend fun pipeline(item: OutputItem, transformDir: Path) {
+        if (libreTimeConnector.exists(item.file)) {
+            logger.debug { "Skipping $item as it exists in LibreTime." }
+            return
+        }
+
         val file = download(item)
 
         val outFile = transformDir / item.program / item.file
@@ -122,6 +129,8 @@ class FileOutput(
         addAudioTags(item, outFile)
 
         setCreationTime(outFile, item)
+
+        libreTimeConnector.upload(outFile)
     }
 
     override suspend fun save(items: List<OutputItem>) {
@@ -130,7 +139,7 @@ class FileOutput(
 
         supervisorScope {
             items.forEach { item ->
-                launch {
+                launch(Dispatchers.IO) {
                     try {
                         pipeline(item, transformDir)
                     } catch (ex: Throwable) {

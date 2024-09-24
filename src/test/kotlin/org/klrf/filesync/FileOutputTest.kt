@@ -4,6 +4,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSingleElement
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.paths.shouldContainFile
 import io.kotest.matchers.paths.shouldContainFiles
@@ -26,7 +27,7 @@ import org.jaudiotagger.tag.FieldKey
 //        // file convert
 //        // write ID3 tags
 //        // audio normalization
-//        // libretime upload
+//        // LibreTime upload
 //    }
 //}
 
@@ -418,5 +419,51 @@ class FileOutputTest {
             File("build/test-output").deleteRecursively()
         }
     }
-}
 
+    @Test
+    fun `files should be uploaded to LibreTime`() = fileSyncTest {
+        config(
+            """
+              fileSync:
+                programs:
+                  program:
+                    source:
+                      type: FTP
+                      url: fake.url
+            """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file1.mp3")
+        val item2 = MemoryItem("program", "file2.mp3")
+        ftpConnector("fake.url", item1, item2)
+
+        assert {
+            val base = fs.getPath("output/transform/program")
+            libreTimeConnector.uploads shouldBe listOf(base / "file1.mp3", base / "file2.mp3")
+        }
+    }
+
+    @Test
+    fun `files that exist in LibreTime should not be re-uploaded`() = fileSyncTest {
+        config(
+            """
+              fileSync:
+                programs:
+                  program:
+                    source:
+                      type: FTP
+                      url: fake.url
+            """.trimIndent()
+        )
+
+        addLibreTimeHistory("file1.mp3")
+
+        val item1 = MemoryItem("program", "file1.mp3")
+        val item2 = MemoryItem("program", "file2.mp3")
+        ftpConnector("fake.url", item1, item2)
+
+        assert {
+            libreTimeConnector.uploads shouldHaveSingleElement fs.getPath("output/transform/program/file2.mp3")
+        }
+    }
+}

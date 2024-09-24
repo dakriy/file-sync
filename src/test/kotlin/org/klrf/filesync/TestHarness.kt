@@ -4,7 +4,9 @@ import com.google.common.jimfs.Jimfs
 import com.uchuhimo.konf.source.yaml
 import io.kotest.matchers.nulls.shouldNotBeNull
 import org.intellij.lang.annotations.Language
-import org.klrf.filesync.domain.*
+import org.klrf.filesync.domain.FileSync
+import org.klrf.filesync.domain.OutputGateway
+import org.klrf.filesync.domain.OutputItem
 import org.klrf.filesync.gateways.*
 
 class TestHarness {
@@ -12,7 +14,7 @@ class TestHarness {
     private val ftpConnectors = mutableListOf<FTPClientStub>()
     private var assertBlock: (List<OutputItem>) -> Unit = { }
 
-    //    private var libreTimeConnector: LibreTimeConnector =
+    val libreTimeConnector = LibreTimeStub()
     var fs = Jimfs.newFileSystem()
 
     fun config(@Language("YAML") yaml: String) {
@@ -28,10 +30,10 @@ class TestHarness {
     fun ftpConnector(vararg connectors: FTPClientStub) {
         ftpConnectors.addAll(connectors)
     }
-//
-//    fun libretimeConnector(connector: LibreTimeConnector) {
-//
-//    }
+
+    fun addLibreTimeHistory(vararg filename: String) {
+        libreTimeConnector.existingFiles.addAll(filename)
+    }
 
     fun assert(block: (List<OutputItem>) -> Unit) {
         assertBlock = block
@@ -45,7 +47,7 @@ class TestHarness {
         var outputItems: List<OutputItem>? = null
 
         val outputFactory = OutputGatewayFactory { spec ->
-            val gateway = DefaultOutputGatewayFactory(fs, LibreTimeStub()).build(spec)
+            val gateway = DefaultOutputGatewayFactory(fs, libreTimeConnector).build(spec)
 
             val outputGateway = OutputGateway {
                 outputItems = it
