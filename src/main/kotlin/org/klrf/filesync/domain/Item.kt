@@ -11,7 +11,7 @@ interface Item {
 
     val createdAt: Instant
 
-    fun data(): ByteArray
+    suspend fun data(): ByteArray
 
     fun computeFormatFromName(): String = if ('.' in name) {
         name.substringAfterLast('.')

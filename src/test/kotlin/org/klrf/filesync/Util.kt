@@ -1,6 +1,7 @@
 package org.klrf.filesync
 
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.runBlocking
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputItem
 
@@ -8,7 +9,9 @@ import org.klrf.filesync.domain.OutputItem
 infix fun Item.shouldMatch(item: Item) {
     program shouldBe item.program
     name shouldBe item.name
-    data() shouldBe item.data()
+    runBlocking {
+        data() shouldBe item.data()
+    }
     createdAt shouldBe item.createdAt
 }
 
@@ -21,7 +24,9 @@ class TestOutputItem(
 infix fun OutputItem.shouldMatch(o: TestOutputItem) {
     "$this.$format" shouldBe o.path
     tags shouldBe o.tags
-    this.item.data() shouldBe o.data
+    runBlocking {
+        item.data() shouldBe o.data
+    }
 }
 
 infix fun Collection<OutputItem>.shouldMatch(items: Collection<TestOutputItem>) {

@@ -1,6 +1,7 @@
 package org.klrf.filesync.domain
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.runBlocking
 
 class FileSync(
     private val input: InputGateway,
@@ -46,6 +47,8 @@ class FileSync(
             }
         }
 
-        output.save(items)
+        runBlocking {
+            output.save(items)
+        }
     }
 }

@@ -36,7 +36,7 @@ class FTPSource(
     ) : Item {
         constructor(p: Pair<String, Instant>) : this(p.first, p.second)
         override val program: String = this@FTPSource.program
-        override fun data(): ByteArray = connector.downloadFile(name)
+        override suspend fun data(): ByteArray = connector.downloadFile(name)
     }
 
     override fun listItems(): Sequence<Item> {

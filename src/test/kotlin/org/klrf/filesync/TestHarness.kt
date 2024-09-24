@@ -11,13 +11,15 @@ class TestHarness {
     private var yaml: String = ""
     private val ftpConnectors = mutableListOf<FTPClientStub>()
     private var assertBlock: (List<OutputItem>) -> Unit = { }
+
+    //    private var libreTimeConnector: LibreTimeConnector =
     var fs = Jimfs.newFileSystem()
 
     fun config(@Language("YAML") yaml: String) {
         this.yaml = yaml
     }
 
-    fun ftpConnector(url: String, vararg items: Item) {
+    fun ftpConnector(url: String, vararg items: MemoryItem) {
         val ftpClient = FTPClientStub(FTPConnection(url), *items)
 
         ftpConnectors.add(ftpClient)
@@ -26,6 +28,10 @@ class TestHarness {
     fun ftpConnector(vararg connectors: FTPClientStub) {
         ftpConnectors.addAll(connectors)
     }
+//
+//    fun libretimeConnector(connector: LibreTimeConnector) {
+//
+//    }
 
     fun assert(block: (List<OutputItem>) -> Unit) {
         assertBlock = block
@@ -39,7 +45,7 @@ class TestHarness {
         var outputItems: List<OutputItem>? = null
 
         val outputFactory = OutputGatewayFactory { spec ->
-            val gateway = DefaultOutputGatewayFactory(fs).build(spec)
+            val gateway = DefaultOutputGatewayFactory(fs, LibreTimeStub()).build(spec)
 
             val outputGateway = OutputGateway {
                 outputItems = it
@@ -62,7 +68,8 @@ class TestHarness {
         } finally {
             try {
                 fs.close()
-            } catch (_: UnsupportedOperationException) {}
+            } catch (_: UnsupportedOperationException) {
+            }
         }
     }
 }

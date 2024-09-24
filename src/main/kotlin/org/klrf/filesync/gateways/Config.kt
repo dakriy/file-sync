@@ -76,10 +76,16 @@ fun interface FTPConnectorFactory {
 
 class DefaultOutputGatewayFactory(
     private val fileSystem: FileSystem,
+    private val libreTimeConnector: LibreTimeConnector,
 ) : OutputGatewayFactory {
     override fun build(config: OutputSpec): OutputGateway {
         return if (config.enabled) {
-            FileOutput(fileSystem.getPath(config.dir), config.ffmpegOptions, config.id3Version)
+            FileOutput(
+                fileSystem.getPath(config.dir),
+                libreTimeConnector,
+                config.ffmpegOptions,
+                config.id3Version,
+            )
         } else OutputGateway { }
     }
 }

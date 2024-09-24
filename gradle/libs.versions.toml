@@ -17,3 +17,4 @@ ktorClientJava = { group = "io.ktor", name = "ktor-client-java", version.ref = "
 jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version = "3.0.1" }
 jimFs = { group = "com.google.jimfs", name = "jimfs", version = "1.1" }
 mockFTPServer = { group = "org.mockftpserver", name = "MockFtpServer", version = "3.2.0"}
+serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.7.3"}

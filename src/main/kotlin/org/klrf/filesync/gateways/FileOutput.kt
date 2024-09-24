@@ -5,6 +5,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
+import kotlinx.coroutines.*
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.TagOptionSingleton
@@ -15,6 +16,7 @@ import org.klrf.filesync.domain.OutputItem
 
 class FileOutput(
     private val directory: Path,
+    private val libreTimeConnector: LibreTimeConnector,
     private val ffmpegOptions: String?,
     id3Version: String?,
 ) : OutputGateway {
@@ -34,19 +36,26 @@ class FileOutput(
 
         val options = ffmpegOptions?.split(" ")?.toTypedArray() ?: emptyArray()
 
-        val command = arrayOf(ffmpegPath, "-y", "-i", input.absolutePathString(), *options, output.absolutePathString())
+        val command = arrayOf(
+            ffmpegPath,
+            "-y",
+            "-i",
+            input.absolutePathString(),
+            *options,
+            output.absolutePathString()
+        )
         val process = ProcessBuilder(*command)
             .redirectErrorStream(true)
             .start()
 
-        val output = process.inputStream.bufferedReader().use { reader ->
+        val ffmpegOutput = process.inputStream.bufferedReader().use { reader ->
             reader.lines().toList()
         }
 
         val exitCode = process.waitFor()
 
         if (exitCode != 0) {
-            error("FFMPEG failed. Output: ${output.joinToString("\n")}")
+            error("FFMPEG failed. Output: ${ffmpegOutput.joinToString("\n")}")
         }
     }
 
@@ -56,7 +65,7 @@ class FileOutput(
         path.setLastModifiedTime(fileTime)
     }
 
-    fun download(item: Item): Path {
+    suspend fun download(item: Item): Path = withContext(Dispatchers.IO) {
         val file = directory / item.program / item.name
         file.writeBytes(
             item.data(),
@@ -66,7 +75,7 @@ class FileOutput(
         )
         setCreationTime(file, item)
 
-        return file
+        file
     }
 
     private fun addAudioTags(item: OutputItem, path: Path) {
@@ -83,7 +92,7 @@ class FileOutput(
         val tag = f.tagAndConvertOrCreateAndSetDefault
         item.tags.forEach { (key, value) ->
             val fieldKey = try {
-                 FieldKey.valueOf(key.uppercase())
+                FieldKey.valueOf(key.uppercase())
             } catch (e: IllegalArgumentException) {
                 logger.warn { "Tag $key not valid tag. Valid tags are ${FieldKey.entries.map { it.name.lowercase() }}." }
                 return@forEach
@@ -93,40 +102,43 @@ class FileOutput(
         f.commit()
     }
 
-    override fun save(items: List<OutputItem>) {
+    private fun createDirectories(items: List<OutputItem>, transformDir: Path) {
         val programs = items.map { it.program }.distinct()
-        val transformDir = directory / "transform"
         programs.forEach { program ->
             (directory / program).createDirectories()
             (transformDir / program).createDirectories()
         }
+    }
 
-        items.map { item ->
-            try {
-                val file = download(item)
+    private suspend fun pipeline(item: OutputItem, transformDir: Path) {
+        val file = download(item)
 
-                val outFile = transformDir / item.program / item.file
+        val outFile = transformDir / item.program / item.file
 
-                val needToConvertFile = item.format != item.computeFormatFromName()
-                val customOptionsSpecified = ffmpegOptions != null
-                if (needToConvertFile || customOptionsSpecified) {
-                    convert(file, outFile)
-                } else file.copyTo(outFile)
+        if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
+            convert(file, outFile)
+        } else file.copyTo(outFile)
 
-                addAudioTags(item, outFile)
+        addAudioTags(item, outFile)
 
-                setCreationTime(outFile, item)
-            } catch (ex: Throwable) {
-                logger.error(ex) { "Error when processing $item" }
+        setCreationTime(outFile, item)
+    }
+
+    override suspend fun save(items: List<OutputItem>) {
+        val transformDir = directory / "transform"
+        createDirectories(items, transformDir)
+
+        supervisorScope {
+            items.forEach { item ->
+                launch {
+                    try {
+                        pipeline(item, transformDir)
+                    } catch (ex: Throwable) {
+                        logger.error(ex) { "Error when processing $item" }
+                    }
+                }
             }
         }
-
-        // Download -- DONE
-        // FFMPEG to convert -- DONE
-        // FFMPEG audio normalization -- DONE
-        // ffmpeg -y -i "$file" -q:a 1 -filter:a loudnorm=I=-23.0:offset=0.0:print_format=summary:linear=false:dual_mono=true "Processing$filename.mp3"
-        // tag audio -- DONE
-        // LibreTime upload
     }
 }
 

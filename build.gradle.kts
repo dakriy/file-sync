@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.0.0"
+    kotlin("jvm") version "2.0.20"
+    kotlin("plugin.serialization") version "2.0.20"
 }
 
 group = "org.klrf"
@@ -27,6 +28,8 @@ dependencies {
     implementation(libs.ktorClientJava)
 
     implementation(libs.jaudiotagger)
+
+    implementation(libs.serialization)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.mockFTPServer)

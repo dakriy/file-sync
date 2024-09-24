@@ -10,7 +10,7 @@ data class MemoryItem(
     val data: ByteArray = ByteArray(0),
     private val dataHook: () -> Unit = {},
 ) : Item {
-    override fun data(): ByteArray = data.also { dataHook() }
+    override suspend fun data(): ByteArray = data.also { dataHook() }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

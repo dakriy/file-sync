@@ -7,7 +7,7 @@ interface InputGateway {
 }
 
 fun interface OutputGateway {
-    fun save(items: List<OutputItem>)
+    suspend fun save(items: List<OutputItem>)
 }
 
 fun interface Source {
