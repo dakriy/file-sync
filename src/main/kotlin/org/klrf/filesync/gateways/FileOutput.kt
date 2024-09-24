@@ -1,13 +1,12 @@
 package org.klrf.filesync.gateways
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.*
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.TagOptionSingleton
@@ -88,12 +87,13 @@ class FileOutput(
 
     suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
-        file.writeBytes(
-            item.data(),
-            StandardOpenOption.CREATE,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.TRUNCATE_EXISTING,
-        )
+        withContext(Dispatchers.IO) {
+            Files.copy(
+                item.data(),
+                file,
+                StandardCopyOption.REPLACE_EXISTING,
+            )
+        }
         setCreationTime(file, item)
 
         return file

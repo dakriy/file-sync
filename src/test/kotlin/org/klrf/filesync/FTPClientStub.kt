@@ -14,5 +14,5 @@ class FTPClientStub(
         return items.map { it.name to it.createdAt }.asSequence()
     }
 
-    override fun downloadFile(file: String) = items.first { it.name == file }.data
+    override fun downloadFile(file: String) = items.first { it.name == file }.data.inputStream()
 }

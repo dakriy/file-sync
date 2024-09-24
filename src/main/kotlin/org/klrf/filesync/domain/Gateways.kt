@@ -13,4 +13,3 @@ fun interface OutputGateway {
 fun interface Source {
     fun listItems(): Sequence<Item>
 }
-

@@ -1,5 +1,6 @@
 package org.klrf.filesync.domain
 
+import java.io.InputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -11,7 +12,7 @@ interface Item {
 
     val createdAt: Instant
 
-    suspend fun data(): ByteArray
+    suspend fun data(): InputStream
 
     fun computeFormatFromName(): String = if ('.' in name) {
         name.substringAfterLast('.')

@@ -10,7 +10,7 @@ infix fun Item.shouldMatch(item: Item) {
     program shouldBe item.program
     name shouldBe item.name
     runBlocking {
-        data() shouldBe item.data()
+        data().readAllBytes() shouldBe item.data().readAllBytes()
     }
     createdAt shouldBe item.createdAt
 }
@@ -25,7 +25,7 @@ infix fun OutputItem.shouldMatch(o: TestOutputItem) {
     "$this.$format" shouldBe o.path
     tags shouldBe o.tags
     runBlocking {
-        item.data() shouldBe o.data
+        item.data().readAllBytes() shouldBe o.data
     }
 }
 

@@ -15,7 +15,7 @@ interface FTPConnector {
     val connection: FTPConnection
 
     fun listFiles(): Sequence<Pair<String, Instant>>
-    fun downloadFile(file: String): ByteArray
+    fun downloadFile(file: String): InputStream
 }
 
 data class FTPConnection(
@@ -36,7 +36,7 @@ class FTPSource(
     ) : Item {
         constructor(p: Pair<String, Instant>) : this(p.first, p.second)
         override val program: String = this@FTPSource.program
-        override suspend fun data(): ByteArray = connector.downloadFile(name)
+        override suspend fun data() = connector.downloadFile(name)
     }
 
     override fun listItems(): Sequence<Item> {
@@ -73,17 +73,16 @@ class RealFTPConnector(
         }
     }
 
-    override fun listFiles(): Sequence<Pair<String, Instant>> = ftpAction { ftp ->
+    override fun listFiles() = ftpAction { ftp ->
         val files = ftp.listFiles(connection.path)
         files
             .filter(FTPFile::isFile)
             .map { it.name to it.timestampInstant }
     }.asSequence()
 
-    override fun downloadFile(file: String): ByteArray = ftpAction { ftp ->
+    override fun downloadFile(file: String) = ftpAction { ftp ->
         val path = connection.path ?: ""
-        val stream = ftp.retrieveFileStream("$path/$file")
+        ftp.retrieveFileStream("$path/$file")
             ?: throw IOException("File not found: $path/$file")
-        stream.use(InputStream::readAllBytes)
     }
 }

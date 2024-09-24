@@ -12,24 +12,19 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-
     implementation(libs.konfCore)
     implementation(libs.konfYaml)
-
     implementation(libs.kotlinLogger)
     implementation(libs.kotlinCoroutinesCore)
-
     implementation(libs.commons)
-
     implementation(libs.slf4j)
-    runtimeOnly(libs.slf4jSimple)
-
     implementation(libs.ktorClient)
     implementation(libs.ktorClientJava)
-
     implementation(libs.jaudiotagger)
-
     implementation(libs.serialization)
+    implementation(libs.webdav)
+
+    runtimeOnly(libs.slf4jSimple)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.mockFTPServer)

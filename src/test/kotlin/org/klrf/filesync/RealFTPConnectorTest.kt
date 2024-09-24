@@ -128,7 +128,7 @@ class RealFTPConnectorTest {
             files = listOf(FileEntry("$HOME/some dir/test-file.txt", contents))
         ) {
             val result = connection(path = "$HOME/some dir").downloadFile("test-file.txt")
-            result shouldBe contents.toByteArray()
+            result.readAllBytes() shouldBe contents.toByteArray()
         }
     }
 
