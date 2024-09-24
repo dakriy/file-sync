@@ -142,7 +142,6 @@ class FileOutput(
             return
         }
 
-        TagOptionSingleton.getInstance().iD3V2Version
         val f = AudioFileIO.read(file)
         val tag = f.tagAndConvertOrCreateAndSetDefault
         item.tags.forEach { (key, value) ->
