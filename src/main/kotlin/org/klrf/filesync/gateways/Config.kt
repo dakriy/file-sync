@@ -63,6 +63,7 @@ data class OutputSpec(
     val dir: String = "output",
     val ffmpegOptions: String? = null,
     val enabled: Boolean = true,
+    val id3Version: String? = null,
 )
 
 fun interface OutputGatewayFactory {
@@ -78,7 +79,7 @@ class DefaultOutputGatewayFactory(
 ) : OutputGatewayFactory {
     override fun build(config: OutputSpec): OutputGateway {
         return if (config.enabled) {
-            FileOutput(fileSystem.getPath(config.dir), config.ffmpegOptions)
+            FileOutput(fileSystem.getPath(config.dir), config.ffmpegOptions, config.id3Version)
         } else OutputGateway { }
     }
 }

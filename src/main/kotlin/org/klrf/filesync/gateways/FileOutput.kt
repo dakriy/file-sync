@@ -1,9 +1,14 @@
 package org.klrf.filesync.gateways
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.TagOptionSingleton
+import org.jaudiotagger.tag.reference.ID3V2Version
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
@@ -11,7 +16,19 @@ import org.klrf.filesync.domain.OutputItem
 class FileOutput(
     private val directory: Path,
     private val ffmpegOptions: String?,
+    id3Version: String?,
 ) : OutputGateway {
+    init {
+        try {
+            if (id3Version != null) {
+                TagOptionSingleton.getInstance().iD3V2Version = ID3V2Version.valueOf(id3Version)
+            }
+        } catch (_: IllegalArgumentException) {
+            error("Unknown id3Version '$id3Version'. Valid values are ${ID3V2Version.entries.map { it.name }}.")
+        }
+    }
+
+    private val logger = KotlinLogging.logger {}
     private fun convert(input: Path, output: Path) {
         val ffmpegPath = System.getenv("FFMPEG") ?: "ffmpeg"
 
@@ -52,6 +69,28 @@ class FileOutput(
         return file
     }
 
+    private fun addAudioTags(item: OutputItem, path: Path) {
+        val file = try {
+            path.toFile()
+        } catch (e: UnsupportedOperationException) {
+            return
+        }
+
+        TagOptionSingleton.getInstance().iD3V2Version
+        val f = AudioFileIO.read(file)
+        val tag = f.tagAndConvertOrCreateAndSetDefault
+        item.tags.forEach { (key, value) ->
+            val fieldKey = try {
+                 FieldKey.valueOf(key.uppercase())
+            } catch (e: IllegalArgumentException) {
+                logger.warn { "Tag $key not valid tag. Valid tags are ${FieldKey.entries.map { it.name }}." }
+                return@forEach
+            }
+            tag.setField(fieldKey, value)
+        }
+        f.commit()
+    }
+
     override fun save(items: List<OutputItem>) {
         val programs = items.map { it.program }.distinct()
         val transformDir = directory / "transform"
@@ -61,28 +100,30 @@ class FileOutput(
         }
 
         items.map { item ->
-            val ex = try {
+            try {
                 val file = download(item)
 
                 val outFile = transformDir / item.program / item.file
-                if (item.format != item.computeFormatFromName()) {
+
+                val needToConvertFile = item.format != item.computeFormatFromName()
+                val customOptionsSpecified = ffmpegOptions != null
+                if (needToConvertFile || customOptionsSpecified) {
                     convert(file, outFile)
                 } else file.copyTo(outFile)
-                setCreationTime(outFile, item)
 
-                null
+                addAudioTags(item, outFile)
+
+                setCreationTime(outFile, item)
             } catch (ex: Throwable) {
-                ex
+                logger.error(ex) { "Error when processing $item" }
             }
-            if (ex != null) throw ex
-            item to ex
         }
 
         // Download -- DONE
-        // FFMPEG to convert
-        // FFMPEG audio normalization
+        // FFMPEG to convert -- DONE
+        // FFMPEG audio normalization -- DONE
         // ffmpeg -y -i "$file" -q:a 1 -filter:a loudnorm=I=-23.0:offset=0.0:print_format=summary:linear=false:dual_mono=true "Processing$filename.mp3"
-        // tag audio
+        // tag audio -- DONE
         // LibreTime upload
     }
 }

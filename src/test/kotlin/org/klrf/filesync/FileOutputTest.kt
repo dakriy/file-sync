@@ -1,8 +1,10 @@
 package org.klrf.filesync
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.paths.shouldContainFile
 import io.kotest.matchers.paths.shouldContainFiles
 import io.kotest.matchers.paths.shouldExist
@@ -15,6 +17,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.io.path.*
 import kotlin.test.Test
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
 
 //class FileOutput : Output {
 //    override suspend fun save(items: List<OutputItem>) {
@@ -300,7 +304,8 @@ class FileOutputTest {
             val createdAt = Instant.now().minus(10, ChronoUnit.DAYS)
                 .truncatedTo(ChronoUnit.SECONDS)
             val item1 = MemoryItem(
-                "program", "test.ogg", data =
+                "program", "test.ogg",
+                data =
                 this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!.readBytes(),
                 createdAt = createdAt,
             )
@@ -329,5 +334,88 @@ class FileOutputTest {
         }
     } finally {
         File("build/test-output").deleteRecursively()
+    }
+
+    @Test
+    fun `setting invalid id3 version throws an error and tells you correct versions`() {
+        val ex = shouldThrow<IllegalStateException> {
+            fileSyncTest {
+                config(
+                    """
+                  fileSync:
+                    output:
+                      enabled: true
+                      id3Version: asdfasdf
+                    programs:
+                      program:
+                        source:
+                          type: FTP
+                          url: fake.url
+                """.trimIndent()
+                )
+
+                val item1 = MemoryItem("program", "file 1")
+                ftpConnector("fake.url", item1)
+            }
+        }
+
+        ex.message shouldBe "Unknown id3Version 'asdfasdf'. Valid values are [ID3_V22, ID3_V23, ID3_V24]."
+    }
+
+    @Test
+    fun `given audio tags, output files are tagged properly`() {
+        try {
+            fileSyncTest {
+                config(
+                    """
+              fileSync:
+                output:
+                  dir: build/test-output
+                programs:
+                  program:
+                    source:
+                      type: FTP
+                      url: fake.url
+                    output:
+                      filename: test
+                      format: mp3
+                      tags:
+                        genre: Program
+                        artist: Dr. David DeRose
+                        album: American Indians
+                        comment: Hello
+                        title: The_title
+            """.trimIndent()
+                )
+
+                fs = FileSystems.getDefault()
+
+                val item1 = MemoryItem(
+                    "program", "test.ogg",
+                    data = this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!
+                        .readBytes(),
+                )
+                ftpConnector("fake.url", item1)
+
+                assert {
+                    val file = File("build/test-output/transform/program/test.mp3")
+                    file.shouldExist()
+
+                    val audioFile = AudioFileIO.read(file)
+                    val tag = audioFile.tag
+                    listOf(
+                        FieldKey.GENRE to "Program",
+                        FieldKey.ARTIST to "Dr. David DeRose",
+                        FieldKey.ALBUM to "American Indians",
+                        FieldKey.COMMENT to "Hello",
+                        FieldKey.TITLE to "The_title",
+                    ).forEach { (key, value) ->
+                        tag.getFirst(key) shouldBe value
+                    }
+                }
+            }
+        } finally {
+            File("build/test-output").deleteRecursively()
+        }
     }
 }
