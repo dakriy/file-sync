@@ -85,7 +85,7 @@ class FileOutput(
             val fieldKey = try {
                  FieldKey.valueOf(key.uppercase())
             } catch (e: IllegalArgumentException) {
-                logger.warn { "Tag $key not valid tag. Valid tags are ${FieldKey.entries.map { it.name }}." }
+                logger.warn { "Tag $key not valid tag. Valid tags are ${FieldKey.entries.map { it.name.lowercase() }}." }
                 return@forEach
             }
             tag.setField(fieldKey, value)
