@@ -466,4 +466,27 @@ class FileOutputTest {
             libreTimeConnector.uploads shouldHaveSingleElement fs.getPath("output/transform/program/file2.mp3")
         }
     }
+
+    @Test
+    fun `no files are uploaded to LibreTime during a dry run`() = fileSyncTest{
+        config(
+            """
+              fileSync:
+                output:
+                  dryRun: true
+                programs:
+                  program:
+                    source:
+                      type: FTP
+                      url: fake.url
+            """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file1.mp3")
+        ftpConnector("fake.url", item1)
+
+        assert {
+            libreTimeConnector.uploads.shouldBeEmpty()
+        }
+    }
 }

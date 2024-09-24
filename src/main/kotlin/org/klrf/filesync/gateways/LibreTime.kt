@@ -28,7 +28,6 @@ private data class LibreTimeFile(
 class LibreTimeApi(
     private val libreTimeUrl: String,
     private val apiKey: String,
-    private val dryRun: Boolean,
     private val httpClient: HttpClient,
 ) : LibreTimeConnector {
 
@@ -56,10 +55,6 @@ class LibreTimeApi(
     override suspend fun exists(filename: String) = filename in fileNames
 
     override suspend fun upload(file: Path) {
-        logger.info { "Uploading file ${file.pathString}" }
-
-        if (dryRun) return
-
         val response: HttpResponse = httpClient.submitFormWithBinaryData(
             url = "$libreTimeUrl/rest/media",
             formData = formData {

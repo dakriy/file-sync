@@ -20,6 +20,7 @@ class FileOutput(
     private val directory: Path,
     private val libreTimeConnector: LibreTimeConnector,
     private val ffmpegOptions: String?,
+    private val dryRun: Boolean,
     id3Version: String?,
 ) : OutputGateway {
     init {
@@ -130,7 +131,12 @@ class FileOutput(
 
         setCreationTime(outFile, item)
 
-        libreTimeConnector.upload(outFile)
+        if (!dryRun) {
+            logger.info { "Uploading $item" }
+            libreTimeConnector.upload(outFile)
+        } else {
+            logger.info { "Not uploading $item because dry run is set." }
+        }
     }
 
     override suspend fun save(items: List<OutputItem>) {

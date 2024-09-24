@@ -64,6 +64,7 @@ data class OutputSpec(
     val ffmpegOptions: String? = null,
     val enabled: Boolean = true,
     val id3Version: String? = null,
+    val dryRun: Boolean = false,
 )
 
 fun interface OutputGatewayFactory {
@@ -84,6 +85,7 @@ class DefaultOutputGatewayFactory(
                 fileSystem.getPath(config.dir),
                 libreTimeConnector,
                 config.ffmpegOptions,
+                config.dryRun,
                 config.id3Version,
             )
         } else OutputGateway { }
