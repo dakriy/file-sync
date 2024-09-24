@@ -23,6 +23,8 @@ class FileOutput(
     private val dryRun: Boolean,
     id3Version: String?,
 ) : OutputGateway {
+    private val logger = KotlinLogging.logger {}
+
     init {
         try {
             if (id3Version != null) {
@@ -33,7 +35,70 @@ class FileOutput(
         }
     }
 
-    private val logger = KotlinLogging.logger {}
+    override suspend fun save(items: List<OutputItem>) {
+        val transformDir = directory / "transform"
+        createDirectories(items, transformDir)
+
+        supervisorScope {
+            items.forEach { item ->
+                launch(Dispatchers.IO) {
+                    try {
+                        pipeline(item, transformDir)
+                    } catch (ex: Throwable) {
+                        logger.error(ex) { "Error when processing $item" }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun pipeline(item: OutputItem, transformDir: Path) {
+        if (libreTimeConnector.exists(item.file)) {
+            logger.debug { "Skipping $item as it exists in LibreTime." }
+            return
+        }
+
+        val file = download(item)
+
+        val outFile = transformDir / item.program / item.file
+
+        if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
+            convert(file, outFile)
+        } else file.copyTo(outFile)
+
+        addAudioTags(item, outFile)
+
+        setCreationTime(outFile, item)
+
+        if (!dryRun) {
+            logger.info { "Uploading $item" }
+            libreTimeConnector.upload(outFile)
+        } else {
+            logger.info { "Not uploading $item because dry run is set." }
+        }
+    }
+
+    private fun createDirectories(items: List<OutputItem>, transformDir: Path) {
+        val programs = items.map { it.program }.distinct()
+        programs.forEach { program ->
+            (directory / program).createDirectories()
+            (transformDir / program).createDirectories()
+        }
+    }
+
+    suspend fun download(item: Item): Path {
+        val file = directory / item.program / item.name
+        file.writeBytes(
+            item.data(),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+        )
+        setCreationTime(file, item)
+
+        return file
+    }
+
     private fun convert(input: Path, output: Path) {
         val ffmpegPath = System.getenv("FFMPEG") ?: "ffmpeg"
 
@@ -68,19 +133,6 @@ class FileOutput(
         path.setLastModifiedTime(fileTime)
     }
 
-    suspend fun download(item: Item): Path {
-        val file = directory / item.program / item.name
-        file.writeBytes(
-            item.data(),
-            StandardOpenOption.CREATE,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.TRUNCATE_EXISTING,
-        )
-        setCreationTime(file, item)
-
-        return file
-    }
-
     private fun addAudioTags(item: OutputItem, path: Path) {
         if (item.tags.isEmpty()) return
 
@@ -104,137 +156,4 @@ class FileOutput(
         }
         f.commit()
     }
-
-    private fun createDirectories(items: List<OutputItem>, transformDir: Path) {
-        val programs = items.map { it.program }.distinct()
-        programs.forEach { program ->
-            (directory / program).createDirectories()
-            (transformDir / program).createDirectories()
-        }
-    }
-
-    private suspend fun pipeline(item: OutputItem, transformDir: Path) {
-        if (libreTimeConnector.exists(item.file)) {
-            logger.debug { "Skipping $item as it exists in LibreTime." }
-            return
-        }
-
-        val file = download(item)
-
-        val outFile = transformDir / item.program / item.file
-
-        if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
-            convert(file, outFile)
-        } else file.copyTo(outFile)
-
-        addAudioTags(item, outFile)
-
-        setCreationTime(outFile, item)
-
-        if (!dryRun) {
-            logger.info { "Uploading $item" }
-            libreTimeConnector.upload(outFile)
-        } else {
-            logger.info { "Not uploading $item because dry run is set." }
-        }
-    }
-
-    override suspend fun save(items: List<OutputItem>) {
-        val transformDir = directory / "transform"
-        createDirectories(items, transformDir)
-
-        supervisorScope {
-            items.forEach { item ->
-                launch(Dispatchers.IO) {
-                    try {
-                        pipeline(item, transformDir)
-                    } catch (ex: Throwable) {
-                        logger.error(ex) { "Error when processing $item" }
-                    }
-                }
-            }
-        }
-    }
 }
-
-//class LibreTimeOutput(
-//    private val url: String,
-//    private val apiKey: String,
-//    private val workDir: File,
-//    private val httpClient: HttpClient,
-//) : OutputGateway {
-//    private val logger = KotlinLogging.logger { }
-//
-//    private fun saveFile(item: OutputItem): File {
-//        val f = File(workDir, item.file)
-//        f.writeBytes(item.data())
-//        Files.setAttribute(f.toPath(), "creationTime", FileTime.from(item.createdAt))
-//        return f
-//    }
-//
-//    private fun tagFile(item: OutputItem, file: File) {
-//        val f = AudioFileIO.read(file)
-//        val tag = f.tagAndConvertOrCreateDefault
-//        item.tags.forEach { (key, value) ->
-//            tag.setField(FieldKey.valueOf(key.uppercase()), value)
-//        }
-//        f.commit()
-//    }
-//
-//    override fun save(items: List<OutputItem>) {
-//        val errors = mutableListOf<Throwable>()
-//
-//        items.forEach { item ->
-//            try {
-//                val f = saveFile(item)
-//
-//                FFmpegBuilder().apply {
-//                    setInput(f.path)
-//                    overrideOutputFiles(true)
-//                    addOutput("${f.path}.tmp").apply {
-//                        setFormat(item.format)
-//                    }
-//                }
-//
-//                tagFile(item, f)
-//
-//
-//                runBlocking {
-//                    val response: HttpResponse = httpClient.submitFormWithBinaryData(
-//                        url = "$url/rest/media",
-//                        formData = formData {
-//                            append("file", item.data(), Headers.build {
-//                                append(HttpHeaders.ContentType, ContentType.Audio.MPEG)
-//                                append(
-//                                    HttpHeaders.ContentDisposition,
-//                                    "filename=\"${item.file}\""
-//                                )
-//                            })
-//                        }
-//                    ) {
-//                        val key = Base64.getEncoder().encodeToString(("$apiKey:").toByteArray())
-//                        header("Authorization", "Bearer $key")
-//                    }
-//
-//                    val body = response.bodyAsText()
-//                    logger.debug { "Response for file $item: $body" }
-//
-//                    if (response.status.isSuccess()) {
-//                        logger.info { "Successfully uploaded $item " }
-//                    } else {
-//                        error("Failed uploading $item to LibreTime: $body")
-//                    }
-//                }
-//            } catch (e: Exception) {
-//                logger.error(e) { "Failed when processing $item." }
-//                errors.add(e)
-//            }
-//        }
-//
-//
-//        if (errors.isNotEmpty()) {
-//            logger.error { "Errors occurred when processing some files. Check the logs." }
-//            throw errors.first()
-//        }
-//    }
-//}
