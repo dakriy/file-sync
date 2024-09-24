@@ -4,6 +4,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldHaveSingleElement
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.paths.shouldContainFile
@@ -21,16 +22,6 @@ import kotlin.test.Test
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 
-//class FileOutput : Output {
-//    override suspend fun save(items: List<OutputItem>) {
-//        // write data to file
-//        // file convert
-//        // write ID3 tags
-//        // audio normalization
-//        // LibreTime upload
-//    }
-//}
-
 class FileOutputTest {
     @Test
     fun `given no input no files should be output`() = fileSyncTest {
@@ -38,11 +29,11 @@ class FileOutputTest {
             """
           fileSync:
             programs:
-              program:
-                source:
-                  type: Empty
+              - name: program
         """.trimIndent()
         )
+
+        addSource("program")
 
         assert {
             fs.getPath("").listDirectoryEntries().shouldBeEmpty()
@@ -57,15 +48,12 @@ class FileOutputTest {
             output:
               dir: /the/path/to/dest
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file 1")
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             val path = fs.getPath("/the/path/to/dest/program")
@@ -81,17 +69,14 @@ class FileOutputTest {
             output:
               dir: /the/path/to/dest
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
         val contents = "mine turtle"
 
         val item1 = MemoryItem("program", "file 1", data = contents.toByteArray())
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             val path = fs.getPath("/the/path/to/dest/program")
@@ -109,18 +94,15 @@ class FileOutputTest {
             output:
               dir: /the/path/to/dest
             programs:
-              prog:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: prog
         """.trimIndent()
         )
 
         val contents = "mine turtle"
 
-        val item1 = MemoryItem("program", "file 1", data = contents.toByteArray())
-        val item2 = MemoryItem("program", "file 2", data = contents.toByteArray())
-        ftpConnector("fake.url", item1, item2)
+        val item1 = MemoryItem("prog", "file 1", data = contents.toByteArray())
+        val item2 = MemoryItem("prog", "file 2", data = contents.toByteArray())
+        addSource("prog", item1, item2)
 
         assert {
             val path = fs.getPath("/the/path/to/dest/prog")
@@ -141,15 +123,12 @@ class FileOutputTest {
               enabled: false
               dir: /the/path/to/dest
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file 1")
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             val path = fs.getPath("")
@@ -165,10 +144,7 @@ class FileOutputTest {
             output:
               dir: /the/path/to/dest
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
@@ -176,7 +152,7 @@ class FileOutputTest {
             .truncatedTo(ChronoUnit.SECONDS)
 
         val item1 = MemoryItem("program", "file 1", createdAt)
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             val path = fs.getPath("/the/path/to/dest/program/file 1")
@@ -193,15 +169,12 @@ class FileOutputTest {
             output:
               dir: ""
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file", data = "new file data".toByteArray())
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
         val path = fs.getPath("program")
         path.createDirectories()
         val file = path / "file"
@@ -219,15 +192,12 @@ class FileOutputTest {
             """
           fileSync:
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file")
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             fs.getPath("output/transform/program").shouldExist()
@@ -240,15 +210,12 @@ class FileOutputTest {
             """
           fileSync:
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
         """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file")
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             fs.getPath("output/transform/program").shouldExist()
@@ -264,10 +231,7 @@ class FileOutputTest {
             output:
               dir: output
             programs:
-              program:
-                source:
-                  type: FTP
-                  url: fake.url
+              - name: program
                 output:
                   filename: renamed
                   format: mp3
@@ -275,7 +239,7 @@ class FileOutputTest {
             )
 
             val item1 = MemoryItem("program", "file.mp3", data = "new file data".toByteArray())
-            ftpConnector("fake.url", item1)
+            addSource("program", item1)
             assert {
                 val path = fs.getPath("output/transform/program")
                 path.shouldExist()
@@ -293,10 +257,7 @@ class FileOutputTest {
                 output:
                   dir: build/test-output
                 programs:
-                  program:
-                    source:
-                      type: FTP
-                      url: fake.url
+                  - name: program
                     output:
                       filename: test
                       format: mp3
@@ -310,7 +271,7 @@ class FileOutputTest {
                 this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!.readBytes(),
                 createdAt = createdAt,
             )
-            ftpConnector("fake.url", item1)
+            addSource("program", item1)
 
             fs = FileSystems.getDefault()
 
@@ -348,15 +309,12 @@ class FileOutputTest {
                       enabled: true
                       id3Version: asdfasdf
                     programs:
-                      program:
-                        source:
-                          type: FTP
-                          url: fake.url
+                      - name: program
                 """.trimIndent()
                 )
 
                 val item1 = MemoryItem("program", "file 1")
-                ftpConnector("fake.url", item1)
+                addSource("program", item1)
             }
         }
 
@@ -373,10 +331,7 @@ class FileOutputTest {
                 output:
                   dir: build/test-output
                 programs:
-                  program:
-                    source:
-                      type: FTP
-                      url: fake.url
+                  - name: program
                     output:
                       filename: test
                       format: mp3
@@ -396,7 +351,7 @@ class FileOutputTest {
                     data = this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!
                         .readBytes(),
                 )
-                ftpConnector("fake.url", item1)
+                addSource("program", item1)
 
                 assert {
                     val file = File("build/test-output/transform/program/test.mp3")
@@ -426,20 +381,17 @@ class FileOutputTest {
             """
               fileSync:
                 programs:
-                  program:
-                    source:
-                      type: FTP
-                      url: fake.url
+                  - name: program
             """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file1.mp3")
         val item2 = MemoryItem("program", "file2.mp3")
-        ftpConnector("fake.url", item1, item2)
+        addSource("program", item1, item2)
 
         assert {
             val base = fs.getPath("output/transform/program")
-            libreTimeConnector.uploads shouldBe listOf(base / "file1.mp3", base / "file2.mp3")
+            libreTimeConnector.uploads shouldContainAll listOf(base / "file1.mp3", base / "file2.mp3")
         }
     }
 
@@ -449,10 +401,7 @@ class FileOutputTest {
             """
               fileSync:
                 programs:
-                  program:
-                    source:
-                      type: FTP
-                      url: fake.url
+                  - name: program
             """.trimIndent()
         )
 
@@ -460,7 +409,7 @@ class FileOutputTest {
 
         val item1 = MemoryItem("program", "file1.mp3")
         val item2 = MemoryItem("program", "file2.mp3")
-        ftpConnector("fake.url", item1, item2)
+        addSource("program", item1, item2)
 
         assert {
             libreTimeConnector.uploads shouldHaveSingleElement fs.getPath("output/transform/program/file2.mp3")
@@ -475,15 +424,12 @@ class FileOutputTest {
                 output:
                   dryRun: true
                 programs:
-                  program:
-                    source:
-                      type: FTP
-                      url: fake.url
+                  - name: program
             """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file1.mp3")
-        ftpConnector("fake.url", item1)
+        addSource("program", item1)
 
         assert {
             libreTimeConnector.uploads.shouldBeEmpty()

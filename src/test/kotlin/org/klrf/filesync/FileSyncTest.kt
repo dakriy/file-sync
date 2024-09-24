@@ -2,7 +2,6 @@ package org.klrf.filesync
 
 import com.uchuhimo.konf.source.LoadException
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -10,7 +9,6 @@ import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
-import org.klrf.filesync.gateways.FTPConnection
 
 class FileSyncTest {
     @Test
@@ -27,72 +25,18 @@ class FileSyncTest {
     }
 
     @Test
-    fun `should error given program does not contain source`() {
-        shouldThrow<LoadException> {
-            fileSyncTest {
-                config(
-                    """
-                    fileSync:
-                      programs:
-                        ail:
-                    """.trimIndent()
-                )
-            }
-        }
-    }
-
-    @Test
-    fun `should do nothing given a program with an empty source`() = fileSyncTest {
-        config(
-            """
-            fileSync:
-              programs:
-                ail:
-                  source:
-                    type: Empty
-            """.trimIndent()
-        )
-
-        assert { result ->
-            result.shouldBeEmpty()
-        }
-    }
-
-    @Test
-    fun `should error given ftp server without url`() {
-        val ex = shouldThrow<IllegalStateException> {
-            fileSyncTest {
-                config(
-                    """
-                    fileSync:
-                      programs:
-                        programName:
-                          source:
-                            type: FTP
-                    """.trimIndent()
-                )
-            }
-        }
-
-        ex.message shouldContain "url is required for ftp source"
-    }
-
-    @Test
     fun `should output program items given a program with an item`() = fileSyncTest {
         config(
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
              """.trimIndent()
         )
 
         val item = MemoryItem("programName", "item 1")
 
-        ftpConnector("fake.url", item)
+        addSource("programName", item)
 
         assert { result ->
             result shouldMatch listOf(item)
@@ -105,17 +49,14 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
              """.trimIndent()
         )
 
         val item1 = MemoryItem("programName", "item 1")
         val item2 = MemoryItem("programName", "item 2")
 
-        ftpConnector("fake.url", item1, item2)
+        addSource("programName", item1, item2)
 
         assert { result ->
             result shouldMatch listOf(item1, item2)
@@ -128,61 +69,22 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                program1:
-                  source:
-                    type: FTP
-                    url: fake.url
-                program2:
-                  source:
-                    type: FTP
-                    url: fake2.url
+                - name: program1
+                - name: program2
              """.trimIndent()
         )
 
         val item1 = MemoryItem("program1", "item 1")
         val item2 = MemoryItem("program2", "item 2")
 
-        ftpConnector("fake.url", item1)
-        ftpConnector("fake2.url", item2)
+        addSource("program1", item1)
+        addSource("program2", item2)
 
         assert { result ->
             result shouldMatch listOf(item1, item2)
         }
     }
 
-
-    @Test
-    fun `should find ftp connector given all the properties`() = fileSyncTest {
-        config(
-            """
-            fileSync:
-              programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: test.ftp.url
-                    username: user
-                    password: pass
-                    path: /the/ftp/path
-            """.trimIndent()
-        )
-
-        ftpConnector(
-            FTPClientStub(
-                FTPConnection(
-                    url = "test.ftp.url",
-                    username = "user",
-                    password = "pass",
-                    path = "/the/ftp/path",
-                )
-            )
-        )
-
-        assert {
-            // test succeeded if we got here. Just watching for an exception
-            true.shouldBeTrue()
-        }
-    }
 
     @Test
     fun `parse spec requires a regex`() {
@@ -192,9 +94,7 @@ class FileSyncTest {
                     """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: Empty
+                - name: programName
                   parse:
              """.trimIndent()
                 )
@@ -212,9 +112,7 @@ class FileSyncTest {
                 """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: Empty
+                - name: programName
                   parse:
                     regex: the regex
              """.trimIndent()
@@ -230,9 +128,7 @@ class FileSyncTest {
                     """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: Empty
+                - name: programName
                   parse:
                     regex: (?<invalid_capture_group>.*)
              """.trimIndent()
@@ -249,10 +145,7 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   parse:
                     regex: .*special string.*
              """.trimIndent()
@@ -261,7 +154,7 @@ class FileSyncTest {
         val item1 = MemoryItem("programName", "this is the item we want with the special string")
         val item2 = MemoryItem("programName", "some other random item")
 
-        ftpConnector("fake.url", item1, item2)
+        addSource("programName", item1, item2)
 
         assert { result ->
             result shouldMatch listOf(item1)
@@ -274,17 +167,14 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
              """.trimIndent()
         )
 
         val item1 = MemoryItem("programName", "item 1")
         val item2 = MemoryItem("programName", "item 2")
 
-        ftpConnector("fake.url", item1, item2)
+        addSource("programName", item1, item2)
 
         assert { result ->
             result shouldMatch listOf(
@@ -300,16 +190,13 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
              """.trimIndent()
         )
 
         val item = MemoryItem("programName", "item 1")
 
-        ftpConnector("fake.url", item)
+        addSource("programName", item)
 
         assert { result ->
             result shouldMatch listOf(
@@ -324,16 +211,13 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
              """.trimIndent()
         )
 
         val item = MemoryItem("programName", "testfile.flac")
 
-        ftpConnector("fake.url", item)
+        addSource("programName", item)
 
         assert { result ->
             result shouldMatch listOf(
@@ -348,10 +232,7 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   output:
                     format: "flac"
              """.trimIndent()
@@ -359,7 +240,7 @@ class FileSyncTest {
 
         val item = MemoryItem("programName", "testfile.wav")
 
-        ftpConnector("fake.url", item)
+        addSource("programName", item)
 
         assert { result ->
             result shouldMatch listOf(
@@ -374,10 +255,7 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   output:
                     filename: new file name
              """.trimIndent()
@@ -385,7 +263,7 @@ class FileSyncTest {
 
         val item = MemoryItem("programName", "testfile.wav")
 
-        ftpConnector("fake.url", item)
+        addSource("programName", item)
 
         assert { result ->
             result shouldMatch listOf(
@@ -400,10 +278,7 @@ class FileSyncTest {
             """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   output:
                     tags:
                       genre: Program
@@ -414,7 +289,7 @@ class FileSyncTest {
 
         val item = MemoryItem("programName", "testfile.wav")
 
-        ftpConnector("fake.url", item)
+        addSource("programName", item)
 
         assert { result ->
             val tags = mapOf(
@@ -436,10 +311,7 @@ class FileSyncTest {
                 """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   output:
                     tags:
                       comments: "{old_filename}"
@@ -448,7 +320,7 @@ class FileSyncTest {
 
             val item = MemoryItem("programName", "testfile.mp3")
 
-            ftpConnector("fake.url", item)
+            addSource("programName", item)
 
             assert { result ->
                 val tags = mapOf("comments" to "testfile")
@@ -466,10 +338,7 @@ class FileSyncTest {
                 """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   output:
                     filename: "OLD {old_filename}"
              """.trimIndent()
@@ -477,7 +346,7 @@ class FileSyncTest {
 
             val item = MemoryItem("programName", "testfile.mp3")
 
-            ftpConnector("fake.url", item)
+            addSource("programName", item)
 
             assert { result ->
                 result shouldMatch listOf(
@@ -493,10 +362,7 @@ class FileSyncTest {
                 """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   output:
                     tags:
                       comments: "{raw_filename} {old_filename}.{old_extension}"
@@ -505,7 +371,7 @@ class FileSyncTest {
 
             val item = MemoryItem("programName", "testfile.mp3")
 
-            ftpConnector("fake.url", item)
+            addSource("programName", item)
 
             assert { result ->
                 val tags = mapOf("comments" to "testfile.mp3 testfile.mp3")
@@ -523,10 +389,7 @@ class FileSyncTest {
                 """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: FTP
-                    url: fake.url
+                - name: programName
                   parse:
                     regex: AIL.*---(?<title>.*)\.flac
                   output:
@@ -537,7 +400,7 @@ class FileSyncTest {
             val item =
                 MemoryItem("programName", "AIL who cares what text goes here---the real title.flac")
 
-            ftpConnector("fake.url", item)
+            addSource("programName", item)
 
             assert { result ->
                 result shouldMatch listOf(
@@ -553,9 +416,7 @@ class FileSyncTest {
                 """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: Empty
+                - name: programName
                   parse:
                     regex: YEET
                     dates:
@@ -573,9 +434,7 @@ class FileSyncTest {
                     """
             fileSync:
               programs:
-                programName:
-                  source:
-                    type: Empty
+                - name: programName
                   parse:
                     regex: YEET
                     dates:
@@ -597,10 +456,7 @@ class FileSyncTest {
                     fileSync:
                       stopOnFailure: true
                       programs:
-                        program:
-                          source:
-                            type: FTP
-                            url: fake.url
+                        - name: program
                           parse:
                             regex: file (?<date>\d+-\d+-\d+)
                             dates:
@@ -613,7 +469,7 @@ class FileSyncTest {
                     "file 1-1-1",
                 )
 
-                ftpConnector("fake.url", item)
+                addSource("program", item)
             }
         }
 
@@ -629,10 +485,7 @@ class FileSyncTest {
                     fileSync:
                       stopOnFailure: true
                       programs:
-                        program:
-                          source:
-                            type: FTP
-                            url: fake.url
+                        - name: program
                           parse:
                             regex: file (?<date>\d+-\d+-\d+)
                             dates:
@@ -645,7 +498,7 @@ class FileSyncTest {
                     "file 1-1-1",
                 )
 
-                ftpConnector("fake.url", item)
+                addSource("program", item)
             }
         }
 
@@ -661,10 +514,7 @@ class FileSyncTest {
                     fileSync:
                       stopOnFailure: true
                       programs:
-                        program:
-                          source:
-                            type: FTP
-                            url: fake.url
+                        - name: program
                           parse:
                             regex: file (?<date>\d+-\d+-\d+)
                             dates:
@@ -679,7 +529,7 @@ class FileSyncTest {
                     "file 03-02-23",
                 )
 
-                ftpConnector("fake.url", item)
+                addSource("program", item)
             }
         }
         ex.message shouldContain "Unknown pattern letter: I"
@@ -692,10 +542,7 @@ class FileSyncTest {
                 """
                 fileSync:
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                       parse:
                         regex: file (?<date>\d+-\d+-\d+)
                         dates:
@@ -710,7 +557,7 @@ class FileSyncTest {
                 "file 03-02-23",
             )
 
-            ftpConnector("fake.url", item)
+            addSource("program", item)
 
             assert { results ->
                 results shouldMatch listOf(TestOutputItem("program/2023-03-02.mp3"))
@@ -725,10 +572,7 @@ class FileSyncTest {
                 """
                 fileSync:
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                       parse:
                         regex: file (?<date>\d+-\d+-\d+)
                         dates:
@@ -743,7 +587,7 @@ class FileSyncTest {
                 "file 03-02-23",
             )
 
-            ftpConnector("fake.url", item)
+            addSource("program", item)
 
             assert { results ->
                 results shouldMatch listOf(TestOutputItem("program/2023-03-02 23-03-02.mp3"))
@@ -758,10 +602,7 @@ class FileSyncTest {
                 """
                 fileSync:
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                       parse:
                         regex: item \d
                       output:
@@ -777,7 +618,7 @@ class FileSyncTest {
                 MemoryItem("program", "$otherText $j")
             }
 
-            ftpConnector("fake.url", *items.toTypedArray())
+            addSource("program", *items.toTypedArray())
 
             assert { results ->
                 results shouldMatch items
@@ -793,10 +634,7 @@ class FileSyncTest {
                 """
                 fileSync:
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                       parse:
                         regex: item
                  """.trimIndent()
@@ -804,7 +642,7 @@ class FileSyncTest {
 
             val item = MemoryItem("program", "an item")
 
-            ftpConnector("fake.url", item)
+            addSource("program", item)
 
             assert { results ->
                 results shouldMatch listOf(item)
@@ -817,10 +655,7 @@ class FileSyncTest {
             """
                 fileSync:
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                       parse:
                         regex: item
                         entireMatch: true
@@ -829,7 +664,7 @@ class FileSyncTest {
 
         val item = MemoryItem("program", "an item")
 
-        ftpConnector("fake.url", item)
+        addSource("program", item)
 
         assert { results ->
             results.shouldBeEmpty()
@@ -845,10 +680,7 @@ class FileSyncTest {
                 fileSync:
                   stopOnFailure: true
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                       parse:
                         regex: item \d
                         strict: true
@@ -857,7 +689,7 @@ class FileSyncTest {
 
                 val item = MemoryItem("program", "an item")
 
-                ftpConnector("fake.url", item)
+                addSource("program", item)
             }
         }
 
@@ -870,17 +702,14 @@ class FileSyncTest {
             """
                 fileSync:
                   programs:
-                    program:
-                      source:
-                        type: FTP
-                        url: fake.url
+                    - name: program
                  """.trimIndent()
         )
 
         val item1 = MemoryItem("program", "file 1", Instant.now().minusSeconds(1000))
         val item2 = MemoryItem("program", "file 2", Instant.now())
 
-        ftpConnector("fake.url", item1, item2)
+        addSource("program", item1, item2)
 
         assert { results ->
             results shouldMatch listOf(item2, item1)

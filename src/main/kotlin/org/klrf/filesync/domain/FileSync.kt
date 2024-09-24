@@ -13,6 +13,7 @@ class FileSync(
 
         val items = input.programs().flatMap { program ->
             try {
+                // extension whitelists
                 val items = program.source.listItems()
                     .sortedByDescending { it.createdAt }
                     .mapNotNull { item ->

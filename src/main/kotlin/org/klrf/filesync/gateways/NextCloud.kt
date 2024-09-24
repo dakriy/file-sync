@@ -7,6 +7,18 @@ import java.time.Instant
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.Source
 
+val audioFileExtensions = listOf(
+    "aac",
+    "flac",
+    "m4a",
+    "mp3",
+    "ogg",
+    "opus",
+    "wav",
+    "wma",
+    "webm",
+)
+
 class NextCloudSource(
     private val url: String,
     private val path: String,

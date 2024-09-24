@@ -8,9 +8,11 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.test.Test
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.assertThrows
+import org.klrf.filesync.domain.Item
 import org.klrf.filesync.gateways.FTPConnection
-import org.klrf.filesync.gateways.RealFTPConnector
+import org.klrf.filesync.gateways.FTPSource
 import org.mockftpserver.fake.FakeFtpServer
 import org.mockftpserver.fake.UserAccount
 import org.mockftpserver.fake.filesystem.DirectoryEntry
@@ -18,7 +20,7 @@ import org.mockftpserver.fake.filesystem.FileEntry
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem
 
 
-class RealFTPConnectorTest {
+class FTPSourceTest {
     companion object {
         const val DEFAULT_USER = "user"
         const val DEFAULT_PASS = "password"
@@ -31,7 +33,7 @@ class RealFTPConnectorTest {
         password: String = DEFAULT_PASS,
         directories: List<String> = listOf(HOME),
         files: List<FileEntry> = emptyList(),
-        action: () -> Unit,
+        action: suspend () -> Unit,
     ) {
         val ftpServer = FakeFtpServer().apply {
             addUserAccount(UserAccount(user, password, HOME))
@@ -44,20 +46,24 @@ class RealFTPConnectorTest {
 
         ftpServer.start()
         try {
-            action()
+            runBlocking { action() }
         } finally {
             ftpServer.stop()
         }
     }
 
     private fun connection(path: String? = null) =
-        RealFTPConnector(FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, PORT))
+        FTPSource("program", FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, PORT))
+
+    private infix fun Sequence<Item>.shouldMatch(expected: List<Pair<String, Instant>>) {
+        map { it.name to it.createdAt }.toList() shouldBe expected
+    }
 
     @Test
     fun `given invalid username it fails`() {
         val ex = assertThrows<IOException> {
             FTPServerTest("user2") {
-                connection().listFiles()
+                connection().listItems()
             }
         }
 
@@ -68,7 +74,7 @@ class RealFTPConnectorTest {
     fun `given invalid password it fails`() {
         val ex = assertThrows<IOException> {
             FTPServerTest(password = "trip it up lol") {
-                connection().listFiles()
+                connection().listItems()
             }
         }
 
@@ -78,14 +84,14 @@ class RealFTPConnectorTest {
     @Test
     fun `given valid ftp server with no files, it lists no files`() {
         FTPServerTest {
-            connection().listFiles().shouldBeEmpty()
+            connection().listItems().shouldBeEmpty()
         }
     }
 
     @Test
     fun `no files in non-existent directory`() {
         FTPServerTest {
-            connection(path = "/stupid").listFiles().shouldBeEmpty()
+            connection(path = "/stupid").listItems().shouldBeEmpty()
         }
     }
 
@@ -100,7 +106,7 @@ class RealFTPConnectorTest {
                 lastModified = date
             }, FileEntry("$HOME/dir/file2.txt"))
         ) {
-            connection().listFiles().toList() shouldBe listOf("file1.txt" to instant)
+            connection().listItems() shouldMatch listOf("file1.txt" to instant)
         }
     }
 
@@ -115,8 +121,8 @@ class RealFTPConnectorTest {
                 lastModified = date
             }, FileEntry("$HOME/somedir/a second file.exe").apply { lastModified = date })
         ) {
-            val files = connection(path = "$HOME/somedir").listFiles().toList()
-            files shouldBe listOf("test-file.mp3" to instant, "a second file.exe" to instant)
+            val files = connection(path = "$HOME/somedir").listItems()
+            files shouldMatch listOf("test-file.mp3" to instant, "a second file.exe" to instant)
         }
     }
 
@@ -127,20 +133,20 @@ class RealFTPConnectorTest {
             directories = listOf("$HOME/some dir"),
             files = listOf(FileEntry("$HOME/some dir/test-file.txt", contents))
         ) {
-            val result = connection(path = "$HOME/some dir").downloadFile("test-file.txt")
+            val result = connection(path = "$HOME/some dir").listItems().first().data()
             result.readAllBytes() shouldBe contents.toByteArray()
         }
     }
 
     @Test
-    fun `downloading invalid file does something`() {
+    fun `downloading invalid file throws a file not found`() {
         val contents = "The file contents"
         val ex = shouldThrow<IOException> {
             FTPServerTest(
                 directories = listOf("$HOME/some dir"),
                 files = listOf(FileEntry("$HOME/some dir/test-file.txt", contents))
             ) {
-                connection().downloadFile("test-file.txt")
+                connection().FTPItem("test-file.txt", Instant.now()).data()
             }
         }
 

@@ -21,10 +21,11 @@ data class SourceSpec(
     val username: String? = null,
     val password: String? = null,
     val path: String? = null,
+    val port: Int? = null,
 //    val customSource: String? = null,
 ) {
     fun toFTPConnection() = FTPConnection(
-        url ?: error("url is required for ftp source"),
+        url ?: error("The 'url' field is required for a FTP source."),
         username,
         password,
         path,
@@ -46,13 +47,14 @@ data class ParseSpec(
 }
 
 data class ProgramSpec(
-    val source: SourceSpec,
+    val name: String,
+    val source: SourceSpec = SourceSpec(SourceType.Empty),
     val parse: ParseSpec? = null,
     val output: Output? = null,
 )
 
 object FileSyncSpec : ConfigSpec() {
-    val programs by optional<Map<String, ProgramSpec>>(emptyMap())
+    val programs by optional<List<ProgramSpec>>(emptyList())
 
     val output by optional<OutputSpec>(OutputSpec())
 
@@ -67,18 +69,32 @@ data class OutputSpec(
     val dryRun: Boolean = false,
 )
 
-fun interface OutputGatewayFactory {
+fun interface OutputFactory {
     fun build(config: OutputSpec): OutputGateway
 }
 
-fun interface FTPConnectorFactory {
-    fun build(connection: FTPConnection): FTPConnector
+fun interface SourceFactory {
+    fun build(program: String, spec: SourceSpec): Source
 }
 
-class DefaultOutputGatewayFactory(
+object DefaultSourceFactory : SourceFactory {
+    override fun build(program: String, spec: SourceSpec): Source {
+        val type = spec.type
+
+        return when (type) {
+            SourceType.Empty -> EmptySource
+            SourceType.FTP -> {
+                val ftpConnection = spec.toFTPConnection()
+                FTPSource(program, ftpConnection)
+            }
+        }
+    }
+}
+
+class DefaultOutputFactory(
     private val fileSystem: FileSystem,
     private val libreTimeConnector: LibreTimeConnector,
-) : OutputGatewayFactory {
+) : OutputFactory {
     override fun build(config: OutputSpec): OutputGateway {
         return if (config.enabled) {
             FileOutput(
@@ -88,13 +104,17 @@ class DefaultOutputGatewayFactory(
                 config.dryRun,
                 config.id3Version,
             )
-        } else OutputGateway { }
+        } else EmptyOutputGateway
     }
 }
 
+object EmptyOutputGateway : OutputGateway {
+    override suspend fun save(items: List<OutputItem>) {}
+}
+
 class ConfigInput(
-    private val ftpConnectorFactory: FTPConnectorFactory,
-    private val outputGatewayFactory: OutputGatewayFactory,
+    private val sourceFactory: SourceFactory,
+    private val outputFactory: OutputFactory,
     sourceConfig: Config.() -> Config,
 ) : InputGateway {
     private val config = Config {
@@ -107,29 +127,17 @@ class ConfigInput(
 
     override val stopOnFailure: Boolean = config[FileSyncSpec.stopOnFailure] ?: false
 
-    private fun buildSource(name: String, sourceConfig: SourceSpec): Source {
-        val type = sourceConfig.type
-
-        return when (type) {
-            SourceType.Empty -> EmptySource
-            SourceType.FTP -> {
-                val ftpConnection = sourceConfig.toFTPConnection()
-                FTPSource(name, ftpConnectorFactory.build(ftpConnection))
-            }
-        }
-    }
-
     override fun programs(): List<Program> {
-        return config[FileSyncSpec.programs].map { (name, programSpec) ->
-            val source = buildSource(name, programSpec.source)
+        return config[FileSyncSpec.programs].map { program ->
+            val source = sourceFactory.build(program.name, program.source)
 
-            val parse = programSpec.parse?.toParse()
+            val parse = program.parse?.toParse()
 
-            Program(name, source, parse, programSpec.output)
+            Program(program.name, source, parse, program.output)
         }
     }
 
     override fun output(): OutputGateway {
-        return outputGatewayFactory.build(config[FileSyncSpec.output])
+        return outputFactory.build(config[FileSyncSpec.output])
     }
 }
