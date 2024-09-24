@@ -70,6 +70,8 @@ class FileOutput(
     }
 
     private fun addAudioTags(item: OutputItem, path: Path) {
+        if (item.tags.isEmpty()) return
+
         val file = try {
             path.toFile()
         } catch (e: UnsupportedOperationException) {
