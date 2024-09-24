@@ -182,4 +182,38 @@ class SourceFactoryTest {
 
         ex.message shouldBe "The 'username' field is required for a NextCloud source."
     }
+
+    @Test
+    fun `custom sources are resolved`() =
+        inputTest(
+            """
+            fileSync:
+              programs:
+                - name: my special program
+                  source:
+                    type: Custom
+                    class: org.klrf.filesync.CustomSource
+            """.trimIndent()
+        ) {
+            programs().first().source shouldBe CustomSource()
+        }
+
+    @Test
+    fun `class field is required for custom source`() {
+        val ex = shouldThrow<IllegalStateException> {
+            inputTest(
+                """
+                fileSync:
+                  programs:
+                    - name: nextCloud
+                      source:
+                        type: Custom
+                """.trimIndent()
+            ) {
+                programs().first().source
+            }
+        }
+
+        ex.message shouldBe "The 'class' field is required for a Custom source."
+    }
 }

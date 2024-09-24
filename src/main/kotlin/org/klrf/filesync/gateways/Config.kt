@@ -11,7 +11,7 @@ enum class SourceType {
     Empty,
     FTP,
     NextCloud,
-//    Custom,
+    Custom,
 }
 
 data class SourceSpec(
@@ -23,7 +23,7 @@ data class SourceSpec(
     val path: String? = null,
     val port: Int? = null,
     val depth: Int = 1,
-//    val customSource: String? = null,
+    val `class`: String? = null,
 ) {
     fun toFTPConnection() = FTPConnection(
         url ?: error("The 'url' field is required for a FTP source."),
@@ -88,6 +88,7 @@ object DefaultSourceFactory : SourceFactory {
                 val ftpConnection = spec.toFTPConnection()
                 FTPSource(program, ftpConnection)
             }
+
             SourceType.NextCloud -> NextCloudSource(
                 spec.url ?: error("The 'url' field is required for a NextCloud source."),
                 spec.path ?: error("The 'path' field is required for a NextCloud source."),
@@ -96,6 +97,10 @@ object DefaultSourceFactory : SourceFactory {
                 spec.depth,
                 program,
             )
+
+            SourceType.Custom -> Class.forName(
+                spec.`class` ?: error("The 'class' field is required for a Custom source.")
+            ).getConstructor().newInstance() as Source
         }
     }
 }
