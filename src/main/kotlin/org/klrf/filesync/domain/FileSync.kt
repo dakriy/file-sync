@@ -23,7 +23,6 @@ class FileSync(
                             it.computeFormatFromName() in extensionWhitelist
                         } else true
                     }
-                    .sortedByDescending { it.createdAt }
                     .mapNotNull { item ->
                         if (program.parse == null) ParsedItem(item)
                         else program.parse.parse(item)
