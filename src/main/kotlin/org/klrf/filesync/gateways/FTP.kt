@@ -2,6 +2,7 @@ package org.klrf.filesync.gateways
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.Level.DEBUG
+import io.github.oshai.kotlinlogging.Level.ERROR
 import java.io.IOException
 import java.io.PrintWriter
 import java.time.Instant
@@ -39,7 +40,8 @@ data class FTPSource(
     }
 
     override fun listItems(): Sequence<Item> = ftpAction { ftp ->
-        val files = ftp.listFiles(connection.path)
+        ftp.cwd(connection.path)
+        val files = ftp.listFiles()
         files
             .filter(FTPFile::isFile)
             .map { FTPItem(it.name, it.timestampInstant) }
@@ -50,11 +52,10 @@ data class FTPSource(
         val ftp = FTPClient()
 
         return AutoCloseable(ftp::disconnect).use {
-            if (logger.isLoggingEnabledFor(DEBUG)) {
-                ftp.addProtocolCommandListener(PrintCommandListener(PrintWriter(System.out)))
-            }
+            ftp.addProtocolCommandListener(PrintCommandListener(PrintWriter(System.out)))
 
             ftp.connect(connection.url, connection.port)
+            ftp.enterLocalPassiveMode()
             val reply = ftp.replyCode
             if (!FTPReply.isPositiveCompletion(reply)) {
                 ftp.disconnect()

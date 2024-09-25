@@ -14,6 +14,7 @@ import org.jaudiotagger.tag.reference.ID3V2Version
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
+import java.nio.file.StandardOpenOption
 
 class FileOutput(
     private val directory: Path,
@@ -88,12 +89,19 @@ class FileOutput(
     suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
         withContext(Dispatchers.IO) {
-            item.data().use { stream ->
-                Files.copy(
-                    stream,
-                    file,
-                    StandardCopyOption.REPLACE_EXISTING,
-                )
+            item.data().use { inputStream ->
+                Files.newOutputStream(file,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+                ).use { outputStream ->
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                    }
+                }
             }
         }
         setCreationTime(file, item)
