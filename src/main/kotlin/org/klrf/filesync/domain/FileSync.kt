@@ -9,6 +9,9 @@ class FileSync(
     private val logger = KotlinLogging.logger { }
 
     fun sync() {
+        logger.atDebug {
+            payload = mapOf()
+        }
         val output = input.output()
 
         val items = input.programs().flatMap { program ->

@@ -6,6 +6,8 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
@@ -354,6 +356,32 @@ class FileSyncTest {
                 )
             }
         }
+
+    @Test
+    fun `should inject item created at`() = fileSyncTest {
+        config(
+            """
+            fileSync:
+              programs:
+                - name: programName
+                  output:
+                    filename: "created at {created_at}"
+             """.trimIndent()
+        )
+
+        val createdAt = Instant.now()
+
+        val item = MemoryItem("programName", "testfile.mp3", createdAt)
+
+        addSource("programName", item)
+
+        assert { result ->
+            val today = LocalDate.ofInstant(createdAt, ZoneId.systemDefault())
+            result shouldMatch listOf(
+                TestOutputItem("programName/created at ${today}.mp3"),
+            )
+        }
+    }
 
     @Test
     fun `should inject old filename, old extension, and raw filename given name config that uses those`() =

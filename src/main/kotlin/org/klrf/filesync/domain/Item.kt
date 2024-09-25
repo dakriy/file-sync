@@ -3,6 +3,7 @@ package org.klrf.filesync.domain
 import java.io.InputStream
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 interface Item {
@@ -36,6 +37,7 @@ data class ParsedItem(
         "old_filename" to nameAndExtension.first,
         "old_extension" to nameAndExtension.second,
         "raw_filename" to item.name,
+        "created_at" to LocalDate.ofInstant(item.createdAt, ZoneId.systemDefault()).toString(),
     ) + captureGroups
 
     private val dateFormatSignatures = dates.keys.map { "{$it:" }
