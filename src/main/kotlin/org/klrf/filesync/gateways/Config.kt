@@ -99,7 +99,7 @@ object DefaultSourceFactory : SourceFactory {
 
             SourceType.Custom -> Class.forName(
                 spec.`class` ?: error("The 'class' field is required for a Custom source.")
-            ).getConstructor(SourceSpec::class.java).newInstance(spec) as Source
+            ).getConstructor(String::class.java, SourceSpec::class.java).newInstance(program, spec) as Source
         }
     }
 }
