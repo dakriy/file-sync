@@ -40,6 +40,7 @@ data class NextCloudSource(
             .map { item ->
                 NextCloudItem(item.name, item.modified.toInstant(), program, item.path)
             }
+            .sortedByDescending { it.createdAt }
         sardine.shutdown()
 
         return items.asSequence()

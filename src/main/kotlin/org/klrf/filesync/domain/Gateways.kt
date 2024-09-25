@@ -11,5 +11,8 @@ fun interface OutputGateway {
 }
 
 interface Source {
+    /**
+     * It is up to the implementation to order tis by date DESCENDING
+     */
     fun listItems(): Sequence<Item>
 }

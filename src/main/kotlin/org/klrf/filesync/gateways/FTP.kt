@@ -43,6 +43,7 @@ data class FTPSource(
         files
             .filter(FTPFile::isFile)
             .map { FTPItem(it.name, it.timestampInstant) }
+            .sortedByDescending { it.createdAt }
     }.asSequence()
 
     private fun <T> ftpAction(action: (FTPClient) -> T): T {
