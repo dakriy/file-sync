@@ -26,7 +26,7 @@ class AmazingFactsSource(
         override val program: String,
         override val name: String,
         override val createdAt: Instant,
-        val downloadUrl: String,
+        private val downloadUrl: String,
     ) : Item {
         override suspend fun data(): InputStream {
             return withContext(Dispatchers.IO) {
