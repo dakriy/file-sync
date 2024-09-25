@@ -19,3 +19,4 @@ jimFs = { group = "com.google.jimfs", name = "jimfs", version = "1.1" }
 mockFTPServer = { group = "org.mockftpserver", name = "MockFtpServer", version = "3.2.0"}
 serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.7.3"}
 webdav = { group = "com.github.lookfirst", name = "sardine", version = "5.12"}
+jsoup = { group = "org.jsoup", name = "jsoup", version = "1.18.1" }

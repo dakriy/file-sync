@@ -23,6 +23,7 @@ dependencies {
     implementation(libs.jaudiotagger)
     implementation(libs.serialization)
     implementation(libs.webdav)
+    implementation(libs.jsoup)
 
     runtimeOnly(libs.slf4jSimple)
 
