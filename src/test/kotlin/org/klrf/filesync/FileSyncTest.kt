@@ -715,4 +715,31 @@ class FileSyncTest {
             results shouldMatch listOf(item2, item1)
         }
     }
+
+    @Test
+    fun `should ignore extensions not whitelisted`() = fileSyncTest {
+        config(
+            """
+            fileSync:
+              programs:
+                - name: program
+                  source:
+                    type: Empty
+                    extensions:
+                      - ogg
+                      - wav
+             """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file 1.mp3")
+        val item2 = MemoryItem("program", "file 2.ogg")
+        val item3 = MemoryItem("program", "file 3.wav")
+        val item4 = MemoryItem("program", "file 4.flac")
+
+        addSource("program", item1, item2, item3, item4)
+
+        assert { results ->
+            results shouldMatch listOf(item2, item3)
+        }
+    }
 }

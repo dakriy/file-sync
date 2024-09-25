@@ -13,8 +13,13 @@ class FileSync(
 
         val items = input.programs().flatMap { program ->
             try {
-                // extension whitelists
+                val extensionWhitelist = program.extensions
                 val items = program.source.listItems()
+                    .filter {
+                        if (extensionWhitelist != null) {
+                            it.computeFormatFromName() in extensionWhitelist
+                        } else true
+                    }
                     .sortedByDescending { it.createdAt }
                     .mapNotNull { item ->
                         if (program.parse == null) ParsedItem(item)

@@ -196,7 +196,12 @@ class SourceFactoryTest {
                     class: org.klrf.filesync.CustomSource
             """.trimIndent()
         ) {
-            programs().first().source shouldBe CustomSource()
+            programs().first().source shouldBe CustomSource(
+                SourceSpec(
+                    type = SourceType.Custom,
+                    `class` = "org.klrf.filesync.CustomSource",
+                )
+            )
         }
 
     @Test

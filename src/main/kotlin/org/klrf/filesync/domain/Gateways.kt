@@ -10,6 +10,6 @@ fun interface OutputGateway {
     suspend fun save(items: List<OutputItem>)
 }
 
-fun interface Source {
+interface Source {
     fun listItems(): Sequence<Item>
 }

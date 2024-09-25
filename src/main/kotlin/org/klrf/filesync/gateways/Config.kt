@@ -24,6 +24,7 @@ data class SourceSpec(
     val port: Int? = null,
     val depth: Int = 1,
     val `class`: String? = null,
+    val extensions: List<String>? = null,
 )
 
 data class ParseSpec(
@@ -98,7 +99,7 @@ object DefaultSourceFactory : SourceFactory {
 
             SourceType.Custom -> Class.forName(
                 spec.`class` ?: error("The 'class' field is required for a Custom source.")
-            ).getConstructor().newInstance() as Source
+            ).getConstructor(SourceSpec::class.java).newInstance(spec) as Source
         }
     }
 }
@@ -145,7 +146,7 @@ class ConfigInput(
 
             val parse = program.parse?.toParse()
 
-            Program(program.name, source, parse, program.output)
+            Program(program.name, source, parse, program.output, program.source.extensions?.toSet())
         }
     }
 

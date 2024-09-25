@@ -5,4 +5,5 @@ data class Program(
     val source: Source,
     val parse: Parse?,
     val output: Output?,
+    val extensions: Set<String>?,
 )
