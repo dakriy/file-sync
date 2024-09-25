@@ -88,11 +88,13 @@ class FileOutput(
     suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
         withContext(Dispatchers.IO) {
-            Files.copy(
-                item.data(),
-                file,
-                StandardCopyOption.REPLACE_EXISTING,
-            )
+            item.data().use { stream ->
+                Files.copy(
+                    stream,
+                    file,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            }
         }
         setCreationTime(file, item)
 
