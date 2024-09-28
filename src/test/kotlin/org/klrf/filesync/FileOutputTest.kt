@@ -7,6 +7,8 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldHaveSingleElement
 import io.kotest.matchers.file.shouldExist
+import io.kotest.matchers.longs.shouldBeGreaterThan
+import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.paths.shouldContainFile
 import io.kotest.matchers.paths.shouldContainFiles
 import io.kotest.matchers.paths.shouldExist
@@ -15,10 +17,13 @@ import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.io.path.*
+import kotlin.math.absoluteValue
 import kotlin.test.Test
+import kotlinx.coroutines.delay
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 
@@ -391,7 +396,10 @@ class FileOutputTest {
 
         assert {
             val base = fs.getPath("output/transform/program")
-            libreTimeConnector.uploads shouldContainAll listOf(base / "file1.mp3", base / "file2.mp3")
+            libreTimeConnector.uploads shouldContainAll listOf(
+                base / "file1.mp3",
+                base / "file2.mp3"
+            )
         }
     }
 
@@ -417,7 +425,7 @@ class FileOutputTest {
     }
 
     @Test
-    fun `no files are uploaded to LibreTime during a dry run`() = fileSyncTest{
+    fun `no files are uploaded to LibreTime during a dry run`() = fileSyncTest {
         config(
             """
               fileSync:
@@ -433,6 +441,62 @@ class FileOutputTest {
 
         assert {
             libreTimeConnector.uploads.shouldBeEmpty()
+        }
+    }
+
+    @Test
+    fun `items are downloaded concurrently`() = fileSyncTest {
+        var item1Begin: Instant? = null
+        var item2Begin: Instant? = null
+        config(
+            """
+              fileSync:
+                programs:
+                  - name: program1
+            """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program1", "file1.mp3") {
+            item1Begin = Instant.now()
+            delay(25)
+        }
+        val item2 = MemoryItem("program1", "file2.mp3") {
+            item2Begin = Instant.now()
+            delay(25)
+        }
+        addSource("program1", item1, item2)
+        assert {
+            val duration = Duration.between(item1Begin, item2Begin).toMillis().absoluteValue
+            duration shouldBeLessThan 5
+        }
+    }
+
+    @Test
+    fun `programs can have download rate limits`() = fileSyncTest {
+        var item1Begin: Instant? = null
+        var item2Begin: Instant? = null
+        config(
+            """
+              fileSync:
+                programs:
+                  - name: program
+                    output:
+                      maxConcurrentDownloads: 1
+            """.trimIndent()
+        )
+
+        val item1 = MemoryItem("program", "file1.mp3") {
+            item1Begin = Instant.now()
+            delay(25)
+        }
+        val item2 = MemoryItem("program", "file2.mp3") {
+            item2Begin = Instant.now()
+            delay(25)
+        }
+        addSource("program", item1, item2)
+        assert {
+            val duration = Duration.between(item1Begin, item2Begin).toMillis().absoluteValue
+            duration shouldBeGreaterThan 24
         }
     }
 }

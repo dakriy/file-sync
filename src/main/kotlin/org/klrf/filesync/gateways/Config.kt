@@ -65,7 +65,7 @@ data class OutputSpec(
 )
 
 fun interface OutputFactory {
-    fun build(config: OutputSpec): OutputGateway
+    fun build(config: OutputSpec, limits: Map<String, Int>): OutputGateway
 }
 
 fun interface SourceFactory {
@@ -108,13 +108,14 @@ class DefaultOutputFactory(
     private val fileSystem: FileSystem,
     private val libreTimeConnector: LibreTimeConnector,
 ) : OutputFactory {
-    override fun build(config: OutputSpec): OutputGateway {
+    override fun build(config: OutputSpec, limits: Map<String, Int>): OutputGateway {
         return if (config.enabled) {
             FileOutput(
                 fileSystem.getPath(config.dir),
                 libreTimeConnector,
                 config.ffmpegOptions,
                 config.dryRun,
+                limits,
                 config.id3Version,
             )
         } else EmptyOutputGateway
@@ -151,6 +152,9 @@ class ConfigInput(
     }
 
     override fun output(): OutputGateway {
-        return outputFactory.build(config[FileSyncSpec.output])
+        val programLimits = config[FileSyncSpec.programs]
+            .filter { it.output?.maxConcurrentDownloads != null }
+            .associate { it.name to it.output!!.maxConcurrentDownloads!! }
+        return outputFactory.build(config[FileSyncSpec.output], programLimits)
     }
 }

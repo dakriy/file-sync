@@ -10,7 +10,7 @@ import org.klrf.filesync.gateways.*
 
 class SourceFactoryTest {
     private fun inputTest(@Language("YAML") yaml: String, block: ConfigInput.() -> Unit = {}) {
-        val input = ConfigInput(DefaultSourceFactory, { EmptyOutputGateway }) {
+        val input = ConfigInput(DefaultSourceFactory, { _, _ -> EmptyOutputGateway }) {
             from.yaml.string(yaml)
         }
 

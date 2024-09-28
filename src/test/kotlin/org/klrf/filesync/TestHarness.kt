@@ -39,8 +39,9 @@ class TestHarness {
     fun execute() {
         var outputItems: List<OutputItem>? = null
 
-        val outputFactory = OutputFactory { spec ->
-            val gateway = DefaultOutputFactory(fs, libreTimeConnector).build(spec)
+        val outputFactory = OutputFactory { spec, limits ->
+            val gateway = DefaultOutputFactory(fs, libreTimeConnector)
+                .build(spec, limits)
 
             val outputGateway = OutputGateway {
                 outputItems = it

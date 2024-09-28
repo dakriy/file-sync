@@ -5,4 +5,5 @@ data class Output(
     val filename: String? = null,
     val tags: Map<String, String> = emptyMap(),
     val limit: Int? = null,
+    val maxConcurrentDownloads: Int? = null,
 )

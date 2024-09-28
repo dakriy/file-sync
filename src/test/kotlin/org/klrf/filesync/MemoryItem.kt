@@ -8,7 +8,7 @@ data class MemoryItem(
     override val name: String,
     override val createdAt: Instant = defaultTime,
     val data: ByteArray = ByteArray(0),
-    private val dataHook: () -> Unit = {},
+    private val dataHook: suspend () -> Unit = {},
 ) : Item {
     override suspend fun data() = data.also { dataHook() }.inputStream()
 

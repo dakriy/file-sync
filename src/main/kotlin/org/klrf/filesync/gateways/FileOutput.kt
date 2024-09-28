@@ -3,10 +3,11 @@ package org.klrf.filesync.gateways
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.TagOptionSingleton
@@ -14,16 +15,17 @@ import org.jaudiotagger.tag.reference.ID3V2Version
 import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.OutputGateway
 import org.klrf.filesync.domain.OutputItem
-import java.nio.file.StandardOpenOption
 
 class FileOutput(
     private val directory: Path,
     private val libreTimeConnector: LibreTimeConnector,
     private val ffmpegOptions: String?,
     private val dryRun: Boolean,
+    downloadLimits: Map<String, Int>,
     id3Version: String?,
 ) : OutputGateway {
     private val logger = KotlinLogging.logger {}
+    private val programSemaphores = downloadLimits.mapValues { Semaphore(it.value) }
 
     init {
         try {
@@ -89,19 +91,26 @@ class FileOutput(
     suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
         withContext(Dispatchers.IO) {
-            item.data().use { inputStream ->
-                Files.newOutputStream(file,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.WRITE,
-                    StandardOpenOption.TRUNCATE_EXISTING
-                ).use { outputStream ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
+            val semaphore = programSemaphores[item.program]
+            semaphore?.acquire()
+            try {
+                item.data().use { inputStream ->
+                    Files.newOutputStream(
+                        file,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.WRITE,
+                        StandardOpenOption.TRUNCATE_EXISTING
+                    ).use { outputStream ->
+                        val buffer = ByteArray(8192)
+                        var bytesRead: Int
 
-                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                        outputStream.write(buffer, 0, bytesRead)
+                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                            outputStream.write(buffer, 0, bytesRead)
+                        }
                     }
                 }
+            } finally {
+                semaphore?.release()
             }
         }
         setCreationTime(file, item)
