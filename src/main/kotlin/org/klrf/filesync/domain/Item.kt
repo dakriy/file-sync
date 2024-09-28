@@ -80,7 +80,7 @@ data class ParsedItem(
         val duration = try {
             Duration.parse(inputToIso8601)
         } catch (e: DateTimeParseException) {
-            error("Duration format '$durationInput' should be in a format like '1y2m3d4h5m6s'. Can include/exclude any unit.")
+            error("Duration format '$durationInput' should be in a format like '1y 2m 3d 4h 5m 6s'. Can include/exclude any unit.")
         }
 
         return when (operator) {

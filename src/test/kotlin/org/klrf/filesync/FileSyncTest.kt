@@ -706,7 +706,7 @@ class FileSyncTest {
             }
         }
 
-        ex.message shouldBe "Duration format 'sdfasdf' should be in a format like '1y2m3d4h5m6s'. Can include/exclude any unit."
+        ex.message shouldBe "Duration format 'sdfasdf' should be in a format like '1y 2m 3d 4h 5m 6s'. Can include/exclude any unit."
     }
 
     @Test
@@ -780,7 +780,7 @@ class FileSyncTest {
                         dates:
                           date: yyyy-MM-dd H:m:s
                       output:
-                        filename: "{date+7d2h3m4s:yyyy-MM-dd H:m:s}"
+                        filename: "{date+7d 2h 3m 4s:yyyy-MM-dd H:m:s}"
                  """.trimIndent()
         )
 
