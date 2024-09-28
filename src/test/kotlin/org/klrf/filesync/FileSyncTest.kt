@@ -679,6 +679,124 @@ class FileSyncTest {
     }
 
     @Test
+    fun `should error if date math string is not right format`() {
+        val ex = shouldThrow<IllegalStateException> {
+            fileSyncTest {
+                config(
+                    """
+                fileSync:
+                  stopOnFailure: true
+                  programs:
+                    - name: program
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+)
+                        dates:
+                          date: MM-dd-yy
+                      output:
+                        filename: "{dateasdfasdf:yyyy-MM-dd}"
+                 """.trimIndent()
+                )
+
+                val item = MemoryItem(
+                    "program",
+                    "file 03-02-23",
+                )
+
+                addSource("program", item)
+            }
+        }
+
+        ex.message shouldBe "Duration format 'sdfasdf' should be in a format like '1y2m3d4h5m6s'. Can include/exclude any unit."
+    }
+
+    @Test
+    fun `should error if operator is not known`() {
+        val ex = shouldThrow<IllegalStateException> {
+            fileSyncTest {
+                config(
+                    """
+                fileSync:
+                  stopOnFailure: true
+                  programs:
+                    - name: program
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+)
+                        dates:
+                          date: MM-dd-yy
+                      output:
+                        filename: "{datea7d:yyyy-MM-dd}"
+                 """.trimIndent()
+                )
+
+                val item = MemoryItem(
+                    "program",
+                    "file 03-02-23",
+                )
+
+                addSource("program", item)
+            }
+        }
+
+        ex.message shouldBe "Operator 'a' must be '+' or '-'."
+    }
+
+    @Test
+    fun `should be able to add days to a date`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+)
+                        dates:
+                          date: MM-dd-yy
+                      output:
+                        filename: "{date+7d:yyyy-MM-dd}"
+                 """.trimIndent()
+        )
+
+        val item = MemoryItem(
+            "program",
+            "file 03-02-23",
+        )
+
+        addSource("program", item)
+
+        assert { results ->
+            results shouldMatch listOf(TestOutputItem("program/2023-03-09.mp3"))
+        }
+    }
+
+    @Test
+    fun `should be able to add duration to a date`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+ \d+:\d+:\d+)
+                        dates:
+                          date: yyyy-MM-dd H:m:s
+                      output:
+                        filename: "{date+7d2h3m4s:yyyy-MM-dd H:m:s}"
+                 """.trimIndent()
+        )
+
+        val item = MemoryItem(
+            "program",
+            "file 2024-09-30 13:37:53",
+        )
+
+        addSource("program", item)
+
+        assert { results ->
+            results shouldMatch listOf(TestOutputItem("program/2024-10-07 15:40:57.mp3"))
+        }
+    }
+
+    @Test
     fun `should only download last 5 configured files given limit of 5`() {
         fileSyncTest {
             config(

@@ -1,10 +1,9 @@
 package org.klrf.filesync.domain
 
 import java.io.InputStream
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.*
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 interface Item {
     val program: String
@@ -42,17 +41,53 @@ data class ParsedItem(
         "created_at" to LocalDateTime.ofInstant(item.createdAt, ZoneId.systemDefault()).toString(),
     ) + captureGroups
 
-    private val dateFormatSignatures = dates.keys.map { "{$it:" }
+    private val dateFormatSignatures = dates.keys.map { "{$it" }.sortedByDescending { it.length }
 
     private fun String.replaceDate(found: Pair<Int, String>): String {
+        // Interested in 2 things
+        // math after date name (if any)
+        // format
         val (index, foundStr) = found
-        val foundName = foundStr.drop(1).dropLast(1)
-        val full = substring(index).substringBefore('}')
-        val format = full.substringAfter(':')
-        val date = dates[foundName]!!
+        val dateName = foundStr.drop(1)
+
+        val full = substring(index, indexOf('}', index) + 1)
+        val innerFull = full.drop(1).dropLast(1)
+
+        // Drop the curly braces
+        val name = innerFull.substringBefore(":")
+        val format = innerFull.substringAfter(":")
+
+        val duration = name.substringAfter(dateName)
+
+        val date = manipulateDate(dates[dateName]!!, duration)
         val pattern = DateTimeFormatter.ofPattern(format)
 
-        return replace("{$foundName:$format}", date.format(pattern))
+        return replace(full, date.format(pattern))
+    }
+
+    private fun manipulateDate(date: LocalDateTime, durationStr: String): LocalDateTime {
+        if (durationStr.isBlank()) return date
+
+        val operator = durationStr.first()
+        val durationInput = durationStr.drop(1)
+        val inputToIso8601 = "P" + durationInput
+            .uppercase()
+            .replace(" ", "")
+            .replace("D", "DT")
+            .removeSuffix("T")
+
+        // Expected format:  "PnDTnHnMn.nS"
+        val duration = try {
+            Duration.parse(inputToIso8601)
+        } catch (e: DateTimeParseException) {
+            error("Duration format '$durationInput' should be in a format like '1y2m3d4h5m6s'. Can include/exclude any unit.")
+        }
+
+        return when (operator) {
+            '+' -> date.plus(duration)
+            '-' -> date.minus(duration)
+            else -> error("Operator '$operator' must be '+' or '-'.")
+        }
     }
 
     fun interpolate(str: String): String {
