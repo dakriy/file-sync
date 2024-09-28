@@ -3,8 +3,13 @@ package org.klrf.filesync.gateways
 import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.ConfigSpec
 import com.uchuhimo.konf.Feature
+import io.ktor.client.*
+import io.ktor.client.engine.java.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
 import java.nio.file.FileSystem
 import java.time.format.DateTimeFormatter
+import kotlinx.serialization.json.Json
 import org.klrf.filesync.domain.*
 
 enum class SourceType {
@@ -62,6 +67,12 @@ data class OutputSpec(
     val enabled: Boolean = true,
     val id3Version: String? = null,
     val dryRun: Boolean = false,
+    val libreTime: LibreTimeSpec? = null,
+)
+
+data class LibreTimeSpec(
+    val url: String,
+    val apiKey: String,
 )
 
 fun interface OutputFactory {
@@ -79,13 +90,15 @@ object DefaultSourceFactory : SourceFactory {
         return when (type) {
             SourceType.Empty -> EmptySource
             SourceType.FTP -> {
-                FTPSource(program, FTPConnection(
-                    spec.url ?: error("The 'url' field is required for a FTP source."),
-                    spec.username,
-                    spec.password,
-                    spec.path,
-                    spec.port ?: 21,
-                ))
+                FTPSource(
+                    program, FTPConnection(
+                        spec.url ?: error("The 'url' field is required for a FTP source."),
+                        spec.username,
+                        spec.password,
+                        spec.path,
+                        spec.port ?: 21,
+                    )
+                )
             }
 
             SourceType.NextCloud -> NextCloudSource(
@@ -99,17 +112,21 @@ object DefaultSourceFactory : SourceFactory {
 
             SourceType.Custom -> Class.forName(
                 spec.`class` ?: error("The 'class' field is required for a Custom source.")
-            ).getConstructor(String::class.java, SourceSpec::class.java).newInstance(program, spec) as Source
+            ).getConstructor(String::class.java, SourceSpec::class.java)
+                .newInstance(program, spec) as Source
         }
     }
 }
 
 class DefaultOutputFactory(
     private val fileSystem: FileSystem,
-    private val libreTimeConnector: LibreTimeConnector,
+    private val libreTimeConnector: LibreTimeConnector? = null
 ) : OutputFactory {
     override fun build(config: OutputSpec, limits: Map<String, Int>): OutputGateway {
         return if (config.enabled) {
+            val libreTimeConnector = libreTimeConnector
+                ?: buildLibreTimeConnector(config.libreTime)
+
             FileOutput(
                 fileSystem.getPath(config.dir),
                 libreTimeConnector,
@@ -120,6 +137,17 @@ class DefaultOutputFactory(
             )
         } else EmptyOutputGateway
     }
+
+    private fun buildLibreTimeConnector(spec: LibreTimeSpec?) =
+        if (spec != null) {
+            LibreTimeApi(spec.url, spec.apiKey, HttpClient(Java) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        ignoreUnknownKeys = true
+                    })
+                }
+            })
+        } else NullLibreTimeConnector
 }
 
 object EmptyOutputGateway : OutputGateway {

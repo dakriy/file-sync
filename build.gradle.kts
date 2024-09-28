@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
-    kotlin("plugin.serialization") version "2.0.20"
+    kotlin("jvm") version libs.versions.kotlin.get()
+    kotlin("plugin.serialization") version libs.versions.kotlin.get()
 }
 
 group = "org.klrf"
@@ -20,10 +20,13 @@ dependencies {
     implementation(libs.slf4j)
     implementation(libs.ktorClient)
     implementation(libs.ktorClientJava)
+    implementation(libs.ktorContentNegotiation)
+    implementation(libs.ktorSerialization)
     implementation(libs.jaudiotagger)
     implementation(libs.serialization)
     implementation(libs.webdav)
     implementation(libs.jsoup)
+    implementation(libs.reflect)
 
     runtimeOnly(libs.slf4jSimple)
 

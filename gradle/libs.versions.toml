@@ -2,6 +2,7 @@
 slf4j = "2.0.16"
 konf = "1.1.2"
 ktor = "2.3.12"
+kotlin = "2.0.20"
 
 [libraries]
 konfCore = { group = "com.uchuhimo", name = "konf-core", version.ref = "konf" }
@@ -14,9 +15,12 @@ kotestCore = { group = "io.kotest", name = "kotest-assertions-core-jvm", version
 commons = { group = "commons-net", name = "commons-net", version = "3.11.1"}
 ktorClient = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktorClientJava = { group = "io.ktor", name = "ktor-client-java", version.ref = "ktor" }
+ktorContentNegotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktorSerialization = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version = "3.0.1" }
 jimFs = { group = "com.google.jimfs", name = "jimfs", version = "1.1" }
 mockFTPServer = { group = "org.mockftpserver", name = "MockFtpServer", version = "3.2.0"}
 serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.7.3"}
 webdav = { group = "com.github.lookfirst", name = "sardine", version = "5.12"}
 jsoup = { group = "org.jsoup", name = "jsoup", version = "1.18.1" }
+reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }

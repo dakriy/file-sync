@@ -36,7 +36,7 @@ class LibreTimeApi(
         runBlocking {
             val response: HttpResponse = httpClient.get("$libreTimeUrl/api/v2/files?format=json") {
                 headers {
-                    append("Api-Key", apiKey)
+                    append("Authorization", "Api-Key $apiKey")
                 }
             }
 
@@ -65,7 +65,7 @@ class LibreTimeApi(
             }
         ) {
             val key = Base64.getEncoder().encodeToString("$apiKey:".toByteArray())
-            header(HttpHeaders.Authorization, "Bearer $key")
+            header(HttpHeaders.Authorization, "Basic $key")
         }
 
         val body = response.bodyAsText()
@@ -76,5 +76,14 @@ class LibreTimeApi(
         } else {
             error("Could not upload ${file.pathString} to LibreTime. Status code was ${response.status.value}: $body")
         }
+    }
+}
+
+object NullLibreTimeConnector : LibreTimeConnector {
+    override suspend fun exists(filename: String): Boolean {
+        return false
+    }
+
+    override suspend fun upload(file: Path) {
     }
 }
