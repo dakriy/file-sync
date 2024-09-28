@@ -6,9 +6,8 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeParseException
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
 
@@ -376,7 +375,7 @@ class FileSyncTest {
         addSource("programName", item)
 
         assert { result ->
-            val today = LocalDate.ofInstant(createdAt, ZoneId.systemDefault())
+            val today = LocalDateTime.ofInstant(createdAt, ZoneId.systemDefault())
             result shouldMatch listOf(
                 TestOutputItem("programName/created at ${today}.mp3"),
             )
@@ -506,7 +505,7 @@ class FileSyncTest {
 
     @Test
     fun `should error given valid parse format but specified date does not follow format`() {
-        val ex = shouldThrow<DateTimeParseException> {
+        val ex = shouldThrow<IllegalArgumentException> {
             fileSyncTest {
                 config(
                     """
@@ -530,7 +529,7 @@ class FileSyncTest {
             }
         }
 
-        ex.message shouldBe "Text '1-1-1' could not be parsed at index 0"
+        ex.message shouldBe "Unable to parse date 'date' with value '1-1-1' for program/file 1-1-1."
     }
 
     @Test
@@ -620,6 +619,62 @@ class FileSyncTest {
             assert { results ->
                 results shouldMatch listOf(TestOutputItem("program/2023-03-02 23-03-02.mp3"))
             }
+        }
+    }
+
+    @Test
+    fun `should be able to parse a date and time`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      parse:
+                        regex: file (?<date>\d+-\d+-\d+ \d+:\d+:\d+)
+                        dates:
+                          date: MM-dd-yy H:m:s
+                      output:
+                        filename: "{date:yyyy-MM-dd H:s.m}"
+                 """.trimIndent()
+        )
+
+        val item = MemoryItem(
+            "program",
+            "file 03-02-23 22:32:12",
+        )
+
+        addSource("program", item)
+
+        assert { results ->
+            results shouldMatch listOf(TestOutputItem("program/2023-03-02 22:12.32.mp3"))
+        }
+    }
+
+    @Test
+    fun `should be able to parse a time`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      parse:
+                        regex: file (?<date>\d+:\d+:\d+)
+                        dates:
+                          date: H:m:s
+                      output:
+                        filename: "{date:H m}"
+                 """.trimIndent()
+        )
+
+        val item = MemoryItem(
+            "program",
+            "file 22:32:12",
+        )
+
+        addSource("program", item)
+
+        assert { results ->
+            results shouldMatch listOf(TestOutputItem("program/22 32.mp3"))
         }
     }
 

@@ -2,7 +2,11 @@ package org.klrf.filesync.domain
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
 
 data class Parse(
     val regex: Regex,
@@ -37,7 +41,25 @@ data class Parse(
             val dateString = captureGroups[name]
                 ?: error("Capture group '$name' does not exist in '$regex' for program '${item.program}'")
 
-            LocalDate.parse(dateString, format)
+            try {
+                val date = LocalDateTime.parse(dateString, format)
+                return@mapValues date
+            } catch (_: DateTimeParseException) {
+            }
+
+            try {
+                val time = LocalTime.parse(dateString, format)
+                return@mapValues LocalDate.now().atTime(time)
+            } catch (_: DateTimeParseException) {
+            }
+
+            try {
+                val date = LocalDate.parse(dateString, format)
+                return@mapValues date.atStartOfDay()
+            } catch (_: DateTimeParseException) {
+            }
+
+            throw IllegalArgumentException("Unable to parse date '$name' with value '$dateString' for ${item.str()}.")
         }
 
         return ParsedItem(item, captureGroups, dateGroups)

@@ -2,7 +2,7 @@ package org.klrf.filesync.domain
 
 import java.io.InputStream
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -24,12 +24,14 @@ interface Item {
         val extension = computeFormatFromName()
         return name to extension
     }
+
+    fun str(): String = "$program/$name"
 }
 
 data class ParsedItem(
     val item: Item,
     val captureGroups: Map<String, String> = emptyMap(),
-    val dates: Map<String, LocalDate> = emptyMap(),
+    val dates: Map<String, LocalDateTime> = emptyMap(),
 ) : Item by item {
     private val nameAndExtension = nameAndExtension()
 
@@ -37,7 +39,7 @@ data class ParsedItem(
         "old_filename" to nameAndExtension.first,
         "old_extension" to nameAndExtension.second,
         "raw_filename" to item.name,
-        "created_at" to LocalDate.ofInstant(item.createdAt, ZoneId.systemDefault()).toString(),
+        "created_at" to LocalDateTime.ofInstant(item.createdAt, ZoneId.systemDefault()).toString(),
     ) + captureGroups
 
     private val dateFormatSignatures = dates.keys.map { "{$it:" }
