@@ -76,7 +76,6 @@ data class ParsedItem(
             .replace("D", "DT")
             .removeSuffix("T")
 
-        // Expected format:  "PnDTnHnMn.nS"
         val duration = try {
             Duration.parse(inputToIso8601)
         } catch (e: DateTimeParseException) {
