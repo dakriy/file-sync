@@ -66,7 +66,7 @@ class FileOutput(
 
         if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
             convert(file, outFile)
-        } else file.copyTo(outFile)
+        } else file.copyTo(outFile, overwrite = true)
 
         addAudioTags(item, outFile)
 
@@ -90,6 +90,7 @@ class FileOutput(
 
     suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
+        if (file.exists()) { return file }
         withContext(Dispatchers.IO) {
             val semaphore = programSemaphores[item.program]
             semaphore?.acquire()
