@@ -56,7 +56,7 @@ class FileOutput(
 
     private suspend fun pipeline(item: OutputItem, transformDir: Path) {
         if (libreTimeConnector.exists(item.file)) {
-            logger.debug { "Skipping $item as it exists in LibreTime." }
+            logger.info { "Skipping $item as it exists in LibreTime." }
             return
         }
 
@@ -90,7 +90,7 @@ class FileOutput(
 
     suspend fun download(item: Item): Path {
         val file = directory / item.program / item.name
-        if (file.exists()) { return file }
+        if (file.exists()) return file
         withContext(Dispatchers.IO) {
             val semaphore = programSemaphores[item.program]
             semaphore?.acquire()
