@@ -34,10 +34,13 @@ class SourceFactoryTest {
         inputTest(
             """
             fileSync:
+              sources:
+                - name: "empty"
+                  type: Empty
               programs:
                 - name: ail
                   source:
-                    type: Empty
+                    name: "empty"
             """.trimIndent()
         ) {
             programs().first().source shouldBe EmptySource
@@ -49,17 +52,20 @@ class SourceFactoryTest {
             inputTest(
                 """
             fileSync:
+              sources:
+                - name: src
+                  type: FTP
               programs:
                 - name: programName
                   source:
-                    type: FTP
+                    name: src
             """.trimIndent()
             ) {
                 programs().first().source
             }
         }
 
-        ex.message shouldContain "The 'url' field is required for a FTP source."
+        ex.message shouldContain "The 'url' field is required for the FTP source 'src'."
     }
 
     @Test
@@ -67,13 +73,16 @@ class SourceFactoryTest {
         inputTest(
             """
             fileSync:
+              sources:
+                - name: src
+                  type: FTP
+                  url: test.ftp.url
+                  username: user
+                  password: pass
               programs:
                 - name: programName
                   source:
-                    type: FTP
-                    url: test.ftp.url
-                    username: user
-                    password: pass
+                    name: src
                     path: /the/ftp/path
             """.trimIndent()
         ) {
@@ -94,13 +103,16 @@ class SourceFactoryTest {
         inputTest(
             """
             fileSync:
+              sources:
+                - name: bruh
+                  type: NextCloud
+                  url: my.nexcloud.instance
+                  username: user
+                  password: pass
               programs:
                 - name: nextCloud
                   source:
-                    type: NextCloud
-                    url: my.nexcloud.instance
-                    username: user
-                    password: pass
+                    name: bruh
                     path: /the/nextcloud/path
                     depth: 10
             """.trimIndent()
@@ -121,12 +133,15 @@ class SourceFactoryTest {
             inputTest(
                 """
             fileSync:
+              sources:
+                - name: nextCloud
+                  type: NextCloud
+                  username: user
+                  password: pass
               programs:
                 - name: nextCloud
                   source:
-                    type: NextCloud
-                    username: user
-                    password: pass
+                    name: nextCloud
                     path: /the/nextcloud/path
                     depth: 10
             """.trimIndent()
@@ -135,7 +150,7 @@ class SourceFactoryTest {
             }
         }
 
-        ex.message shouldBe "The 'url' field is required for a NextCloud source."
+        ex.message shouldBe "The 'url' field is required for the NextCloud source 'nextCloud'."
     }
 
     @Test
@@ -144,21 +159,23 @@ class SourceFactoryTest {
             inputTest(
                 """
             fileSync:
+              sources:
+                - name: next
+                  type: NextCloud
+                  url: my.nexcloud.instance
+                  username: user
+                  password: pass
               programs:
                 - name: nextCloud
                   source:
-                    type: NextCloud
-                    url: my.nexcloud.instance
-                    username: user
-                    password: pass
-                    depth: 10
+                    name: next
             """.trimIndent()
             ) {
                 programs().first().source
             }
         }
 
-        ex.message shouldBe "The 'path' field is required for a NextCloud source."
+        ex.message shouldBe "The 'path' field is required for the NextCloud source on program 'nextCloud'."
     }
 
     @Test
@@ -167,21 +184,23 @@ class SourceFactoryTest {
             inputTest(
                 """
             fileSync:
+              sources:
+                - name: src
+                  type: NextCloud
+                  url: my.nexcloud.instance
+                  password: pass
               programs:
                 - name: nextCloud
                   source:
-                    type: NextCloud
-                    url: my.nexcloud.instance
-                    password: pass
+                    name: src
                     path: /the/nextcloud/path
-                    depth: 10
             """.trimIndent()
             ) {
                 programs().first().source
             }
         }
 
-        ex.message shouldBe "The 'username' field is required for a NextCloud source."
+        ex.message shouldBe "The 'username' field is required for the NextCloud source 'src'."
     }
 
     @Test
@@ -189,38 +208,48 @@ class SourceFactoryTest {
         inputTest(
             """
             fileSync:
+              sources:
+                - name: custom
+                  type: Custom
+                  class: org.klrf.filesync.CustomSource
               programs:
                 - name: my special program
                   source:
-                    type: Custom
-                    class: org.klrf.filesync.CustomSource
+                    name: custom
             """.trimIndent()
         ) {
             programs().first().source shouldBe CustomSource(
                 "my special program",
                 SourceSpec(
+                    name = "custom",
                     type = SourceType.Custom,
                     `class` = "org.klrf.filesync.CustomSource",
+                ),
+                SourceImplSpec(
+                    name = "custom",
                 )
             )
         }
 
     @Test
-    fun `class field is required for custom source`() {
+    fun `clazz field is required for custom source`() {
         val ex = shouldThrow<IllegalStateException> {
             inputTest(
                 """
                 fileSync:
+                  sources:
+                    - name: special
+                      type: Custom
                   programs:
-                    - name: nextCloud
+                    - name: idk
                       source:
-                        type: Custom
+                        name: special
                 """.trimIndent()
             ) {
                 programs().first().source
             }
         }
 
-        ex.message shouldBe "The 'class' field is required for a Custom source."
+        ex.message shouldBe "The 'class' field is required for the Custom source 'special'."
     }
 }

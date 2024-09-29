@@ -16,8 +16,8 @@ class TestHarness {
     val libreTimeConnector = LibreTimeStub()
     var fs: FileSystem = Jimfs.newFileSystem()
 
-    private val sourceFactory = SourceFactory { program, _ ->
-        sources[program] ?: EmptySource
+    private val sourceFactory = SourceFactory { program, spec, _ ->
+        sources[spec.name] ?: sources[program] ?: EmptySource
     }
 
     fun config(@Language("YAML") yaml: String) {

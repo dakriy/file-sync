@@ -922,10 +922,13 @@ class FileSyncTest {
         config(
             """
             fileSync:
+              sources:
+                - name: source
+                  type: Empty
               programs:
                 - name: program
                   source:
-                    type: Empty
+                    name: source
                     extensions:
                       - ogg
                       - wav
