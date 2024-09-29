@@ -25,7 +25,7 @@ class FileSync(
                     }
                     .mapNotNull { item ->
                         if (program.parse == null) ParsedItem(item)
-                        else program.parse.parse(item)
+                        else program.parse.parse(program.name, item)
                     }
                     .take(program.output?.limit ?: Int.MAX_VALUE)
                     .map { item ->
@@ -38,7 +38,14 @@ class FileSync(
                         val replacedTags = tags.mapValues { (_, value) -> item.interpolate(value) }
                         val replacedFileName = item.interpolate(filename)
 
-                        OutputItem(item, replacedFileName, format, replacedTags)
+                        OutputItem(
+                            item,
+                            program.name,
+                            program.source.name,
+                            replacedFileName,
+                            format,
+                            replacedTags,
+                        )
                     }
                     .toList()
 

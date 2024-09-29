@@ -17,7 +17,7 @@ class TestHarness {
     var fs: FileSystem = Jimfs.newFileSystem()
 
     private val sourceFactory = SourceFactory { program, spec, _ ->
-        sources[spec.name] ?: sources[program] ?: EmptySource
+        sources[spec.name] ?: sources[program] ?: EmptySource(spec.name)
     }
 
     fun config(@Language("YAML") yaml: String) {
@@ -32,8 +32,8 @@ class TestHarness {
         assertBlock = block
     }
 
-    fun addSource(program: String, vararg items: MemoryItem) {
-        sources[program] = SourceStub(items.toList())
+    fun addSource(name: String, vararg items: MemoryItem) {
+        sources[name] = SourceStub(name, items.toList())
     }
 
     fun execute() {

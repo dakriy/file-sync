@@ -88,7 +88,7 @@ class FileOutput(
         }
     }
 
-    suspend fun download(item: Item): Path {
+    suspend fun download(item: OutputItem): Path {
         val file = directory / item.program / item.name
         if (file.exists()) return file
         withContext(Dispatchers.IO) {

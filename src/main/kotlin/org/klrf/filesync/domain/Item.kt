@@ -6,8 +6,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 interface Item {
-    val program: String
-
     val name: String
 
     val createdAt: Instant
@@ -23,8 +21,6 @@ interface Item {
         val extension = computeFormatFromName()
         return name to extension
     }
-
-    fun str(): String = "$program/$name"
 }
 
 data class ParsedItem(
@@ -106,6 +102,8 @@ data class ParsedItem(
 
 data class OutputItem(
     val item: ParsedItem,
+    val program: String,
+    val source: String,
     val fileName: String,
     val format: String = "mp3",
     val tags: Map<String, String> = emptyMap(),

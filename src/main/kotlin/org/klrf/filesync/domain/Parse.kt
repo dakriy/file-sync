@@ -21,11 +21,11 @@ data class Parse(
         captureGroupRegex.findAll(regex.toString()).map { it.groupValues[1] }.toList()
     }
 
-    fun parse(item: Item): ParsedItem? {
+    fun parse(program: String, item: Item): ParsedItem? {
         val result = if (entireMatch) regex.matchEntire(item.name) else regex.find(item.name)
 
         if (result == null) {
-            val message = "Item in ${item.program} did not match '${item.name}'"
+            val message = "Item in $program did not match '${item.name}'"
             if (strict) error(message)
             else logger.warn { message }
 
@@ -39,7 +39,7 @@ data class Parse(
 
         val dateGroups = dateWithParseFormat.mapValues { (name, format) ->
             val dateString = captureGroups[name]
-                ?: error("Capture group '$name' does not exist in '$regex' for program '${item.program}'")
+                ?: error("Capture group '$name' does not exist in '$regex' for program '$program'")
 
             try {
                 val date = LocalDateTime.parse(dateString, format)
@@ -59,7 +59,7 @@ data class Parse(
             } catch (_: DateTimeParseException) {
             }
 
-            throw IllegalArgumentException("Unable to parse date '$name' with value '$dateString' for ${item.str()}.")
+            throw IllegalArgumentException("Unable to parse date '$name' with value '$dateString' for $program/${item.name}.")
         }
 
         return ParsedItem(item, captureGroups, dateGroups)

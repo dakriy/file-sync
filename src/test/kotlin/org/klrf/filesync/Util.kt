@@ -7,7 +7,6 @@ import org.klrf.filesync.domain.OutputItem
 
 
 infix fun Item.shouldMatch(item: Item) {
-    program shouldBe item.program
     name shouldBe item.name
     runBlocking {
         data().readAllBytes() shouldBe item.data().readAllBytes()

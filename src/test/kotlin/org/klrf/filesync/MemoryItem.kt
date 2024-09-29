@@ -4,7 +4,6 @@ import java.time.Instant
 import org.klrf.filesync.domain.Item
 
 data class MemoryItem(
-    override val program: String,
     override val name: String,
     override val createdAt: Instant = defaultTime,
     val data: ByteArray = ByteArray(0),
@@ -18,7 +17,6 @@ data class MemoryItem(
 
         other as MemoryItem
 
-        if (program != other.program) return false
         if (name != other.name) return false
         if (createdAt != other.createdAt) return false
         if (!data.contentEquals(other.data)) return false
@@ -27,8 +25,7 @@ data class MemoryItem(
     }
 
     override fun hashCode(): Int {
-        var result = program.hashCode()
-        result = 31 * result + name.hashCode()
+        var result = name.hashCode()
         result = 31 * result + createdAt.hashCode()
         result = 31 * result + data.contentHashCode()
         return result

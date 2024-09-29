@@ -11,6 +11,8 @@ fun interface OutputGateway {
 }
 
 interface Source {
+    val name: String
+
     /**
      * It is up to the implementation to order tis by date DESCENDING
      */

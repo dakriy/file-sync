@@ -35,7 +35,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("programName", "item 1")
+        val item = MemoryItem("item 1")
 
         addSource("programName", item)
 
@@ -54,8 +54,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("programName", "item 1")
-        val item2 = MemoryItem("programName", "item 2")
+        val item1 = MemoryItem("item 1")
+        val item2 = MemoryItem("item 2")
 
         addSource("programName", item1, item2)
 
@@ -75,8 +75,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("program1", "item 1")
-        val item2 = MemoryItem("program2", "item 2")
+        val item1 = MemoryItem("item 1")
+        val item2 = MemoryItem("item 2")
 
         addSource("program1", item1)
         addSource("program2", item2)
@@ -152,8 +152,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("programName", "this is the item we want with the special string")
-        val item2 = MemoryItem("programName", "some other random item")
+        val item1 = MemoryItem("this is the item we want with the special string")
+        val item2 = MemoryItem("some other random item")
 
         addSource("programName", item1, item2)
 
@@ -172,8 +172,8 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("programName", "item 1")
-        val item2 = MemoryItem("programName", "item 2")
+        val item1 = MemoryItem("item 1")
+        val item2 = MemoryItem("item 2")
 
         addSource("programName", item1, item2)
 
@@ -195,7 +195,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("programName", "item 1")
+        val item = MemoryItem("item 1")
 
         addSource("programName", item)
 
@@ -216,7 +216,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("programName", "testfile.flac")
+        val item = MemoryItem("testfile.flac")
 
         addSource("programName", item)
 
@@ -239,7 +239,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("programName", "testfile.wav")
+        val item = MemoryItem("testfile.wav")
 
         addSource("programName", item)
 
@@ -262,7 +262,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("programName", "testfile.wav")
+        val item = MemoryItem("testfile.wav")
 
         addSource("programName", item)
 
@@ -288,7 +288,7 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item = MemoryItem("programName", "testfile.wav")
+        val item = MemoryItem("testfile.wav")
 
         addSource("programName", item)
 
@@ -319,7 +319,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("programName", "testfile.mp3")
+            val item = MemoryItem("testfile.mp3")
 
             addSource("programName", item)
 
@@ -345,7 +345,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("programName", "testfile.mp3")
+            val item = MemoryItem("testfile.mp3")
 
             addSource("programName", item)
 
@@ -370,7 +370,7 @@ class FileSyncTest {
 
         val createdAt = Instant.now()
 
-        val item = MemoryItem("programName", "testfile.mp3", createdAt)
+        val item = MemoryItem("testfile.mp3", createdAt)
 
         addSource("programName", item)
 
@@ -396,7 +396,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item = MemoryItem("programName", "testfile.mp3")
+            val item = MemoryItem("testfile.mp3")
 
             addSource("programName", item)
 
@@ -424,8 +424,7 @@ class FileSyncTest {
              """.trimIndent()
             )
 
-            val item =
-                MemoryItem("programName", "AIL who cares what text goes here---the real title.flac")
+            val item = MemoryItem("AIL who cares what text goes here---the real title.flac")
 
             addSource("programName", item)
 
@@ -491,10 +490,7 @@ class FileSyncTest {
                      """.trimIndent()
                 )
 
-                val item = MemoryItem(
-                    "program",
-                    "file 1-1-1",
-                )
+                val item = MemoryItem("file 1-1-1")
 
                 addSource("program", item)
             }
@@ -520,10 +516,7 @@ class FileSyncTest {
                      """.trimIndent()
                 )
 
-                val item = MemoryItem(
-                    "program",
-                    "file 1-1-1",
-                )
+                val item = MemoryItem("file 1-1-1")
 
                 addSource("program", item)
             }
@@ -551,10 +544,7 @@ class FileSyncTest {
                      """.trimIndent()
                 )
 
-                val item = MemoryItem(
-                    "program",
-                    "file 03-02-23",
-                )
+                val item = MemoryItem("file 03-02-23")
 
                 addSource("program", item)
             }
@@ -579,10 +569,7 @@ class FileSyncTest {
                  """.trimIndent()
             )
 
-            val item = MemoryItem(
-                "program",
-                "file 03-02-23",
-            )
+            val item = MemoryItem("file 03-02-23")
 
             addSource("program", item)
 
@@ -609,10 +596,7 @@ class FileSyncTest {
                  """.trimIndent()
             )
 
-            val item = MemoryItem(
-                "program",
-                "file 03-02-23",
-            )
+            val item = MemoryItem("file 03-02-23")
 
             addSource("program", item)
 
@@ -638,10 +622,7 @@ class FileSyncTest {
                  """.trimIndent()
         )
 
-        val item = MemoryItem(
-            "program",
-            "file 03-02-23 22:32:12",
-        )
+        val item = MemoryItem("file 03-02-23 22:32:12")
 
         addSource("program", item)
 
@@ -666,10 +647,7 @@ class FileSyncTest {
                  """.trimIndent()
         )
 
-        val item = MemoryItem(
-            "program",
-            "file 22:32:12",
-        )
+        val item = MemoryItem("file 22:32:12")
 
         addSource("program", item)
 
@@ -697,10 +675,7 @@ class FileSyncTest {
                  """.trimIndent()
                 )
 
-                val item = MemoryItem(
-                    "program",
-                    "file 03-02-23",
-                )
+                val item = MemoryItem("file 03-02-23")
 
                 addSource("program", item)
             }
@@ -728,10 +703,7 @@ class FileSyncTest {
                  """.trimIndent()
                 )
 
-                val item = MemoryItem(
-                    "program",
-                    "file 03-02-23",
-                )
+                val item = MemoryItem("file 03-02-23")
 
                 addSource("program", item)
             }
@@ -756,10 +728,7 @@ class FileSyncTest {
                  """.trimIndent()
         )
 
-        val item = MemoryItem(
-            "program",
-            "file 03-02-23",
-        )
+        val item = MemoryItem("file 03-02-23")
 
         addSource("program", item)
 
@@ -784,10 +753,7 @@ class FileSyncTest {
                  """.trimIndent()
         )
 
-        val item = MemoryItem(
-            "program",
-            "file 2024-09-30 13:37:53",
-        )
+        val item = MemoryItem("file 2024-09-30 13:37:53")
 
         addSource("program", item)
 
@@ -816,7 +782,7 @@ class FileSyncTest {
                 val otherText = if (i % 2 == 0) {
                     "other"
                 } else "item"
-                MemoryItem("program", "$otherText $j")
+                MemoryItem("$otherText $j")
             }
 
             addSource("program", *items.toTypedArray())
@@ -831,23 +797,23 @@ class FileSyncTest {
 
     @Test
     fun `should match partial by default`() = fileSyncTest {
-            config(
-                """
+        config(
+            """
                 fileSync:
                   programs:
                     - name: program
                       parse:
                         regex: item
                  """.trimIndent()
-            )
+        )
 
-            val item = MemoryItem("program", "an item")
+        val item = MemoryItem("an item")
 
-            addSource("program", item)
+        addSource("program", item)
 
-            assert { results ->
-                results shouldMatch listOf(item)
-            }
+        assert { results ->
+            results shouldMatch listOf(item)
+        }
     }
 
     @Test
@@ -863,7 +829,7 @@ class FileSyncTest {
                  """.trimIndent()
         )
 
-        val item = MemoryItem("program", "an item")
+        val item = MemoryItem("an item")
 
         addSource("program", item)
 
@@ -888,7 +854,7 @@ class FileSyncTest {
                  """.trimIndent()
                 )
 
-                val item = MemoryItem("program", "an item")
+                val item = MemoryItem("an item")
 
                 addSource("program", item)
             }
@@ -907,8 +873,8 @@ class FileSyncTest {
                  """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file 1", Instant.now().minusSeconds(1000))
-        val item2 = MemoryItem("program", "file 2", Instant.now())
+        val item1 = MemoryItem("file 1", Instant.now().minusSeconds(1000))
+        val item2 = MemoryItem("file 2", Instant.now())
 
         addSource("program", item1, item2)
 
@@ -935,10 +901,10 @@ class FileSyncTest {
              """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file 1.mp3")
-        val item2 = MemoryItem("program", "file 2.ogg")
-        val item3 = MemoryItem("program", "file 3.wav")
-        val item4 = MemoryItem("program", "file 4.flac")
+        val item1 = MemoryItem("file 1.mp3")
+        val item2 = MemoryItem("file 2.ogg")
+        val item3 = MemoryItem("file 3.wav")
+        val item4 = MemoryItem("file 4.flac")
 
         addSource("program", item1, item2, item3, item4)
 

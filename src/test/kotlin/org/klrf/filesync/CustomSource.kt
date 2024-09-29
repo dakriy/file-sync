@@ -6,7 +6,7 @@ import org.klrf.filesync.gateways.SourceImplSpec
 import org.klrf.filesync.gateways.SourceSpec
 
 data class CustomSource(
-    private val programName: String,
+    override val name: String,
     private val spec: SourceSpec,
     private val implSpec: SourceImplSpec,
 ) : Source {

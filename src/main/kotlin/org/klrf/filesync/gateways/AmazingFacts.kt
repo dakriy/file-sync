@@ -15,15 +15,15 @@ import org.klrf.filesync.domain.Source
 
 @Suppress("unused")
 class AmazingFactsSource(
-    val programName: String,
+    override val name: String,
     val spec: SourceSpec,
+    val implSpec: SourceImplSpec,
 ) : Source {
     init {
         requireNotNull(spec.url) { "The 'url' field is required for an AmazingFacts source." }
     }
 
     inner class AmazingFactsItem(
-        override val program: String,
         override val name: String,
         override val createdAt: Instant,
         private val downloadUrl: String,
@@ -71,7 +71,6 @@ class AmazingFactsSource(
                 val fileName = downloadUrl.substringAfterLast("/")
 
                 AmazingFactsItem(
-                    programName,
                     "$title --- $fileName",
                     createdAt,
                     downloadUrl,

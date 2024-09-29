@@ -58,7 +58,7 @@ class FileOutputTest {
         """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file 1")
+        val item1 = MemoryItem("file 1")
         addSource("program", item1)
 
         assert {
@@ -81,7 +81,7 @@ class FileOutputTest {
 
         val contents = "mine turtle"
 
-        val item1 = MemoryItem("program", "file 1", data = contents.toByteArray())
+        val item1 = MemoryItem("file 1", data = contents.toByteArray())
         addSource("program", item1)
 
         assert {
@@ -106,8 +106,8 @@ class FileOutputTest {
 
         val contents = "mine turtle"
 
-        val item1 = MemoryItem("prog", "file 1", data = contents.toByteArray())
-        val item2 = MemoryItem("prog", "file 2", data = contents.toByteArray())
+        val item1 = MemoryItem("file 1", data = contents.toByteArray())
+        val item2 = MemoryItem("file 2", data = contents.toByteArray())
         addSource("prog", item1, item2)
 
         assert {
@@ -133,7 +133,7 @@ class FileOutputTest {
         """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file 1")
+        val item1 = MemoryItem("file 1")
         addSource("program", item1)
 
         assert {
@@ -157,7 +157,7 @@ class FileOutputTest {
         val createdAt = Instant.now().minusSeconds(100)
             .truncatedTo(ChronoUnit.SECONDS)
 
-        val item1 = MemoryItem("program", "file 1", createdAt)
+        val item1 = MemoryItem("file 1", createdAt)
         addSource("program", item1)
 
         assert {
@@ -179,7 +179,7 @@ class FileOutputTest {
         """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file", data = "new file data".toByteArray())
+        val item1 = MemoryItem("file", data = "new file data".toByteArray())
         addSource("program", item1)
         val path = fs.getPath("program")
         path.createDirectories()
@@ -202,7 +202,7 @@ class FileOutputTest {
         """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file")
+        val item1 = MemoryItem("file")
         addSource("program", item1)
 
         assert {
@@ -220,7 +220,7 @@ class FileOutputTest {
         """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file")
+        val item1 = MemoryItem("file")
         addSource("program", item1)
 
         assert {
@@ -244,7 +244,7 @@ class FileOutputTest {
         """.trimIndent()
             )
 
-            val item1 = MemoryItem("program", "file.mp3", data = "new file data".toByteArray())
+            val item1 = MemoryItem("file.mp3", data = "new file data".toByteArray())
             addSource("program", item1)
             assert {
                 val path = fs.getPath("output/transform/program")
@@ -272,7 +272,7 @@ class FileOutputTest {
             val createdAt = Instant.now().minus(10, ChronoUnit.DAYS)
                 .truncatedTo(ChronoUnit.SECONDS)
             val item1 = MemoryItem(
-                "program", "test.ogg",
+                "test.ogg",
                 data =
                 this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!.readBytes(),
                 createdAt = createdAt,
@@ -319,7 +319,7 @@ class FileOutputTest {
                 """.trimIndent()
                 )
 
-                val item1 = MemoryItem("program", "file 1")
+                val item1 = MemoryItem("file 1")
                 addSource("program", item1)
             }
         }
@@ -353,7 +353,7 @@ class FileOutputTest {
                 fs = FileSystems.getDefault()
 
                 val item1 = MemoryItem(
-                    "program", "test.ogg",
+                    "test.ogg",
                     data = this::class.java.classLoader.getResource("file_example_OOG_1MG.ogg")!!
                         .readBytes(),
                 )
@@ -391,8 +391,8 @@ class FileOutputTest {
             """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file1.mp3")
-        val item2 = MemoryItem("program", "file2.mp3")
+        val item1 = MemoryItem("file1.mp3")
+        val item2 = MemoryItem("file2.mp3")
         addSource("program", item1, item2)
 
         assert {
@@ -416,8 +416,8 @@ class FileOutputTest {
 
         addLibreTimeHistory("file1.mp3")
 
-        val item1 = MemoryItem("program", "file1.mp3")
-        val item2 = MemoryItem("program", "file2.mp3")
+        val item1 = MemoryItem("file1.mp3")
+        val item2 = MemoryItem("file2.mp3")
         addSource("program", item1, item2)
 
         assert {
@@ -437,7 +437,7 @@ class FileOutputTest {
             """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file1.mp3")
+        val item1 = MemoryItem("file1.mp3")
         addSource("program", item1)
 
         assert {
@@ -457,11 +457,11 @@ class FileOutputTest {
             """.trimIndent()
         )
 
-        val item1 = MemoryItem("program1", "file1.mp3") {
+        val item1 = MemoryItem("file1.mp3") {
             item1Begin = Instant.now()
             delay(25)
         }
-        val item2 = MemoryItem("program1", "file2.mp3") {
+        val item2 = MemoryItem("file2.mp3") {
             item2Begin = Instant.now()
             delay(25)
         }
@@ -480,22 +480,26 @@ class FileOutputTest {
         config(
             """
               fileSync:
+                sources:
+                  - name: src
+                    type: Empty
+                    maxConcurrentDownloads: 1
                 programs:
                   - name: program
-                    output:
-                      maxConcurrentDownloads: 1
+                    source:
+                      name: src
             """.trimIndent()
         )
 
-        val item1 = MemoryItem("program", "file1.mp3") {
+        val item1 = MemoryItem("file1.mp3") {
             item1Begin = Instant.now()
             delay(25)
         }
-        val item2 = MemoryItem("program", "file2.mp3") {
+        val item2 = MemoryItem("file2.mp3") {
             item2Begin = Instant.now()
             delay(25)
         }
-        addSource("program", item1, item2)
+        addSource("src", item1, item2)
         assert {
             val duration = Duration.between(item1Begin, item2Begin).toMillis().absoluteValue
             duration shouldBeGreaterThan 24

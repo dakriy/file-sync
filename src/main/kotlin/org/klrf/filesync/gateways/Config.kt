@@ -28,7 +28,7 @@ data class SourceSpec(
     val password: String? = null,
     val port: Int? = null,
     val `class`: String? = null,
-//    val rateLimit: Int = 10,
+    val maxConcurrentDownloads: Int = 10,
 )
 
 data class SourceImplSpec(
@@ -99,10 +99,10 @@ object DefaultSourceFactory : SourceFactory {
         val type = spec.type
 
         return when (type) {
-            SourceType.Empty -> EmptySource
+            SourceType.Empty -> EmptySource(spec.name)
             SourceType.FTP -> {
                 FTPSource(
-                    program, FTPConnection(
+                    spec.name, FTPConnection(
                         spec.url ?: missingFieldError("url", SourceType.FTP, spec.name),
                         spec.username,
                         spec.password,
@@ -113,18 +113,18 @@ object DefaultSourceFactory : SourceFactory {
             }
 
             SourceType.NextCloud -> NextCloudSource(
+                spec.name,
                 spec.url ?: missingFieldError("url", SourceType.NextCloud, spec.name),
                 impl?.path ?: error("The 'path' field is required for the ${SourceType.NextCloud.name} source on program '$program'."),
                 spec.username ?: missingFieldError("username", SourceType.NextCloud, spec.name),
                 spec.password,
                 impl.depth,
-                program,
             )
 
             SourceType.Custom -> Class.forName(
                 spec.`class` ?: missingFieldError("class", SourceType.Custom, spec.name),
             ).getConstructor(String::class.java, SourceSpec::class.java, SourceImplSpec::class.java)
-                .newInstance(program, spec, impl) as Source
+                .newInstance(spec.name, spec, impl) as Source
         }
     }
 }

@@ -1,8 +1,5 @@
 package org.klrf.filesync.gateways
 
-import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.oshai.kotlinlogging.Level.DEBUG
-import io.github.oshai.kotlinlogging.Level.ERROR
 import java.io.IOException
 import java.io.PrintWriter
 import java.time.Instant
@@ -22,16 +19,13 @@ data class FTPConnection(
 )
 
 data class FTPSource(
-    private val program: String,
+    override val name: String,
     private val connection: FTPConnection,
 ) : Source {
-    private val logger = KotlinLogging.logger {}
-
     inner class FTPItem(
         override val name: String,
         override val createdAt: Instant,
     ) : Item {
-        override val program: String = this@FTPSource.program
         override suspend fun data() = ftpAction { ftp ->
             val path = connection.path ?: ""
             ftp.retrieveFileStream("$path/$name")

@@ -8,17 +8,16 @@ import org.klrf.filesync.domain.Item
 import org.klrf.filesync.domain.Source
 
 data class NextCloudSource(
+    override val name: String,
     private val url: String,
     private val path: String,
     private val username: String,
     private val password: String?,
     private val depth: Int,
-    private val program: String,
 ) : Source {
     private inner class NextCloudItem(
         override val name: String,
         override val createdAt: Instant,
-        override val program: String,
         val path: String,
     ) : Item {
         override suspend fun data(): InputStream {
@@ -38,7 +37,7 @@ data class NextCloudSource(
         val items = sardine.list(filesUrl, depth)
             .filter { !it.isDirectory }
             .map { item ->
-                NextCloudItem(item.name, item.modified.toInstant(), program, item.path)
+                NextCloudItem(item.name, item.modified.toInstant(), item.path)
             }
             .sortedByDescending { it.createdAt }
         sardine.shutdown()

@@ -26,7 +26,7 @@ class SourceFactoryTest {
                 - name: ail
             """.trimIndent()
         ) {
-            programs().first().source shouldBe EmptySource
+            programs().first().source shouldBe EmptySource("")
         }
 
     @Test
@@ -43,7 +43,7 @@ class SourceFactoryTest {
                     name: "empty"
             """.trimIndent()
         ) {
-            programs().first().source shouldBe EmptySource
+            programs().first().source shouldBe EmptySource("empty")
         }
 
     @Test
@@ -87,7 +87,7 @@ class SourceFactoryTest {
             """.trimIndent()
         ) {
             programs().first().source shouldBe FTPSource(
-                "programName",
+                "src",
                 FTPConnection(
                     url = "test.ftp.url",
                     username = "user",
@@ -118,12 +118,12 @@ class SourceFactoryTest {
             """.trimIndent()
         ) {
             programs().first().source shouldBe NextCloudSource(
+                name = "bruh",
                 url = "my.nexcloud.instance",
                 path = "/the/nextcloud/path",
                 username = "user",
                 password = "pass",
                 depth = 10,
-                program = "nextCloud",
             )
         }
 
@@ -219,15 +219,13 @@ class SourceFactoryTest {
             """.trimIndent()
         ) {
             programs().first().source shouldBe CustomSource(
-                "my special program",
+                "custom",
                 SourceSpec(
                     name = "custom",
                     type = SourceType.Custom,
                     `class` = "org.klrf.filesync.CustomSource",
                 ),
-                SourceImplSpec(
-                    name = "custom",
-                )
+                SourceImplSpec(name = "custom")
             )
         }
 
