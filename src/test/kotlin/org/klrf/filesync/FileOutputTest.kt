@@ -167,7 +167,7 @@ class FileOutputTest {
     }
 
     @Test
-    fun `should overwrite file given file that already exists`() = fileSyncTest {
+    fun `should not re-download already downloaded files`() = fileSyncTest {
         config(
             """
           fileSync:
@@ -187,7 +187,7 @@ class FileOutputTest {
         file.writeBytes("hello".toByteArray())
 
         assert {
-            file.readText() shouldBe "new file data"
+            file.readText() shouldBe "hello"
         }
     }
 
