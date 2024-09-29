@@ -92,7 +92,7 @@ class FileOutput(
         val file = directory / item.program / item.name
         if (file.exists()) return file
         withContext(Dispatchers.IO) {
-            val semaphore = programSemaphores[item.program]
+            val semaphore = programSemaphores[item.source]
             semaphore?.acquire()
             try {
                 item.data().use { inputStream ->

@@ -115,7 +115,8 @@ object DefaultSourceFactory : SourceFactory {
             SourceType.NextCloud -> NextCloudSource(
                 spec.name,
                 spec.url ?: missingFieldError("url", SourceType.NextCloud, spec.name),
-                impl?.path ?: error("The 'path' field is required for the ${SourceType.NextCloud.name} source on program '$program'."),
+                impl?.path
+                    ?: error("The 'path' field is required for the ${SourceType.NextCloud.name} source on program '$program'."),
                 spec.username ?: missingFieldError("username", SourceType.NextCloud, spec.name),
                 spec.password,
                 impl.depth,
@@ -202,6 +203,10 @@ class ConfigInput(
     }
 
     override fun output(): OutputGateway {
-        return outputFactory.build(config[FileSyncSpec.output], emptyMap())
+        val limits = config[FileSyncSpec.sources].associateBy(
+            SourceSpec::name,
+            SourceSpec::maxConcurrentDownloads,
+        )
+        return outputFactory.build(config[FileSyncSpec.output], limits)
     }
 }

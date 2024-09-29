@@ -22,7 +22,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.io.path.*
 import kotlin.math.absoluteValue
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlinx.coroutines.delay
 import org.jaudiotagger.audio.AudioFileIO
@@ -473,7 +472,6 @@ class FileOutputTest {
     }
 
     @Test
-    @Ignore
     fun `programs can have download rate limits`() = fileSyncTest {
         var item1Begin: Instant? = null
         var item2Begin: Instant? = null
