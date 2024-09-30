@@ -94,6 +94,7 @@ class FileOutput(
         withContext(Dispatchers.IO) {
             val semaphore = programSemaphores[item.source]
             semaphore?.acquire()
+            logger.info { "Downloading $file" }
             try {
                 item.data().use { inputStream ->
                     Files.newOutputStream(
