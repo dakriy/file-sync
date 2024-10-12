@@ -125,7 +125,7 @@ class FileOutputTest {
             """
           fileSync:
             output:
-              enabled: false
+              dryRun: true
               dir: /the/path/to/dest
             programs:
               - name: program
@@ -311,7 +311,6 @@ class FileOutputTest {
                     """
                   fileSync:
                     output:
-                      enabled: true
                       id3Version: asdfasdf
                     programs:
                       - name: program

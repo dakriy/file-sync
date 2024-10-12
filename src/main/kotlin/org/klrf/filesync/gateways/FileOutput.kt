@@ -41,6 +41,8 @@ class FileOutput(
         val transformDir = directory / "transform"
         createDirectories(items, transformDir)
 
+        var hadError = false
+
         supervisorScope {
             items.forEach { item ->
                 launch(Dispatchers.IO) {
@@ -48,9 +50,14 @@ class FileOutput(
                         pipeline(item, transformDir)
                     } catch (ex: Throwable) {
                         logger.error(ex) { "Error when processing $item" }
+                        hadError = true
                     }
                 }
             }
+        }
+
+        if (hadError) {
+            error("Had errors while processing files. See logs.")
         }
     }
 
@@ -60,9 +67,18 @@ class FileOutput(
             return
         }
 
+        if (dryRun) {
+            logger.info { "Not processing $item because dry run is set." }
+            return
+        }
+
         val file = download(item)
 
         val outFile = transformDir / item.program / item.file
+
+        if (outFile.exists()) {
+            logger.warn { "Output file exists, do you have a naming scheme that can conflict?" }
+        }
 
         if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
             convert(file, outFile)
@@ -72,12 +88,8 @@ class FileOutput(
 
         setCreationTime(outFile, item)
 
-        if (!dryRun) {
-            logger.info { "Uploading $item" }
-            libreTimeConnector.upload(outFile)
-        } else {
-            logger.info { "Not uploading $item because dry run is set." }
-        }
+        logger.info { "Uploading $item" }
+        libreTimeConnector.upload(outFile)
     }
 
     private fun createDirectories(items: List<OutputItem>, transformDir: Path) {

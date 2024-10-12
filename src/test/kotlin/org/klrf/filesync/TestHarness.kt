@@ -15,6 +15,7 @@ class TestHarness {
 
     val libreTimeConnector = LibreTimeStub()
     var fs: FileSystem = Jimfs.newFileSystem()
+    var useEmptyOutput = false
 
     private val sourceFactory = SourceFactory { program, spec, _ ->
         sources[spec.name] ?: sources[program] ?: EmptySource(spec.name)
@@ -40,8 +41,10 @@ class TestHarness {
         var outputItems: List<OutputItem>? = null
 
         val outputFactory = OutputFactory { spec, limits ->
-            val gateway = DefaultOutputFactory(fs, libreTimeConnector)
-                .build(spec, limits)
+            val gateway = if(useEmptyOutput) EmptyOutputGateway else {
+                DefaultOutputFactory(fs, libreTimeConnector)
+                    .build(spec, limits)
+            }
 
             val outputGateway = OutputGateway {
                 outputItems = it

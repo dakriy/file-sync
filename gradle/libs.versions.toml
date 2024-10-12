@@ -24,3 +24,4 @@ serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization
 webdav = { group = "com.github.lookfirst", name = "sardine", version = "5.12"}
 jsoup = { group = "org.jsoup", name = "jsoup", version = "1.18.1" }
 reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+clikt = { group = "com.github.ajalt.clikt", name = "clikt", version = "5.0.1" }

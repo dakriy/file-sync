@@ -1,10 +1,15 @@
 plugins {
     kotlin("jvm") version libs.versions.kotlin.get()
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
+    id("application")
 }
 
-group = "org.klrf"
+group = "com.persignum"
 version = "1.0-SNAPSHOT"
+
+application {
+    mainClass.set("com.persignum.CLI")
+}
 
 repositories {
     mavenCentral()
@@ -27,6 +32,7 @@ dependencies {
     implementation(libs.webdav)
     implementation(libs.jsoup)
     implementation(libs.reflect)
+    implementation(libs.clikt)
 
     runtimeOnly(libs.slf4jSimple)
 

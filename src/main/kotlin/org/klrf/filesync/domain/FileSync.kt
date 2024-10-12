@@ -9,10 +9,9 @@ class FileSync(
     private val logger = KotlinLogging.logger { }
 
     fun sync() {
-        logger.atDebug {
-            payload = mapOf()
-        }
         val output = input.output()
+
+        var error: Throwable? = null
 
         val items = input.programs().flatMap { program ->
             try {
@@ -55,6 +54,7 @@ class FileSync(
 
                 items
             } catch (e: Throwable) {
+                error = e
                 if (input.stopOnFailure) throw e
 
                 logger.error(e) { "Failed sourcing from $program." }
@@ -64,6 +64,10 @@ class FileSync(
 
         runBlocking {
             output.save(items)
+        }
+
+        if (error != null) {
+            throw error!!
         }
     }
 }

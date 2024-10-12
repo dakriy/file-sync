@@ -238,6 +238,7 @@ class FileSyncTest {
                     format: "flac"
              """.trimIndent()
         )
+        useEmptyOutput = true
 
         val item = MemoryItem("testfile.wav")
 

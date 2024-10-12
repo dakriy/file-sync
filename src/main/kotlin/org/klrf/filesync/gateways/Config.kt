@@ -66,13 +66,12 @@ object FileSyncSpec : ConfigSpec() {
 
     val sources by optional<List<SourceSpec>>(emptyList())
 
-    val stopOnFailure by optional<Boolean?>(null)
+    val stopOnFailure by optional<Boolean>(false)
 }
 
 data class OutputSpec(
     val dir: String = "output",
     val ffmpegOptions: String? = null,
-    val enabled: Boolean = true,
     val id3Version: String? = null,
     val dryRun: Boolean = false,
     val libreTime: LibreTimeSpec? = null,
@@ -134,20 +133,21 @@ class DefaultOutputFactory(
     private val fileSystem: FileSystem,
     private val libreTimeConnector: LibreTimeConnector? = null
 ) : OutputFactory {
-    override fun build(config: OutputSpec, limits: Map<String, Int>): OutputGateway {
-        return if (config.enabled) {
-            val libreTimeConnector = libreTimeConnector
-                ?: buildLibreTimeConnector(config.libreTime)
+    override fun build(
+        config: OutputSpec,
+        limits: Map<String, Int>,
+    ): OutputGateway {
+        val libreTimeConnector = libreTimeConnector
+            ?: buildLibreTimeConnector(config.libreTime)
 
-            FileOutput(
-                fileSystem.getPath(config.dir),
-                libreTimeConnector,
-                config.ffmpegOptions,
-                config.dryRun,
-                limits,
-                config.id3Version,
-            )
-        } else EmptyOutputGateway
+        return FileOutput(
+            fileSystem.getPath(config.dir),
+            libreTimeConnector,
+            config.ffmpegOptions,
+            config.dryRun,
+            limits,
+            config.id3Version,
+        )
     }
 
     private fun buildLibreTimeConnector(spec: LibreTimeSpec?) =
@@ -172,7 +172,7 @@ class ConfigInput(
     sourceConfig: Config.() -> Config,
 ) : InputGateway {
     private val logger = KotlinLogging.logger {}
-    private val config = Config {
+    val config = Config {
         addSpec(FileSyncSpec)
         enable(Feature.OPTIONAL_SOURCE_BY_DEFAULT)
     }
@@ -180,7 +180,8 @@ class ConfigInput(
         .from.env()
         .from.systemProperties()
 
-    override val stopOnFailure: Boolean = config[FileSyncSpec.stopOnFailure] ?: false
+    override val stopOnFailure: Boolean
+        get() = config[FileSyncSpec.stopOnFailure]
 
     override fun programs(): List<Program> {
         val sources = config[FileSyncSpec.sources].associateBy { it.name }
