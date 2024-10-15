@@ -5,13 +5,8 @@ import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.ConfigSpec
 import com.uchuhimo.konf.Feature
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
-import io.ktor.client.engine.java.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
 import java.nio.file.FileSystem
 import java.time.format.DateTimeFormatter
-import kotlinx.serialization.json.Json
 
 enum class SourceType {
     Empty,
@@ -74,12 +69,12 @@ data class OutputSpec(
     val ffmpegOptions: String? = null,
     val id3Version: String? = null,
     val dryRun: Boolean = false,
-    val libreTime: LibreTimeSpec? = null,
+    val connector: OutputConnectorSpec? = null,
 )
 
-data class LibreTimeSpec(
-    val url: String,
-    val apiKey: String,
+data class OutputConnectorSpec(
+    val `class`: String,
+    val properties: Map<String, String> = emptyMap(),
 )
 
 fun interface OutputFactory {
@@ -131,18 +126,18 @@ object DefaultSourceFactory : SourceFactory {
 
 class DefaultOutputFactory(
     private val fileSystem: FileSystem,
-    private val libreTimeConnector: LibreTimeConnector? = null
+    private val outputConnector: OutputConnector? = null
 ) : OutputFactory {
     override fun build(
         config: OutputSpec,
         limits: Map<String, Int>,
     ): OutputGateway {
-        val libreTimeConnector = libreTimeConnector
-            ?: buildLibreTimeConnector(config.libreTime)
+        val connector = outputConnector
+            ?: buildLibreTimeConnector(config.connector)
 
         return FileOutput(
             fileSystem.getPath(config.dir),
-            libreTimeConnector,
+            connector,
             config.ffmpegOptions,
             config.dryRun,
             limits,
@@ -150,16 +145,12 @@ class DefaultOutputFactory(
         )
     }
 
-    private fun buildLibreTimeConnector(spec: LibreTimeSpec?) =
+    private fun buildLibreTimeConnector(spec: OutputConnectorSpec?) =
         if (spec != null) {
-            LibreTimeApi(spec.url, spec.apiKey, HttpClient(Java) {
-                install(ContentNegotiation) {
-                    json(Json {
-                        ignoreUnknownKeys = true
-                    })
-                }
-            })
-        } else NullLibreTimeConnector
+            val clazz = this::class.java.classLoader.loadClass(spec.`class`)
+
+            clazz.getConstructor(Map::class.java).newInstance(spec.properties) as OutputConnector
+        } else NullOutputConnector
 }
 
 object EmptyOutputGateway : OutputGateway {

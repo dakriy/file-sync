@@ -14,7 +14,7 @@ class TestHarness {
     private val sources = mutableMapOf<String, Source>()
     private var assertBlock: (List<OutputItem>) -> Unit = { }
 
-    val libreTimeConnector = LibreTimeStub()
+    val libreTimeConnector = OutputStub()
     var fs: FileSystem = Jimfs.newFileSystem()
     var useEmptyOutput = false
 
