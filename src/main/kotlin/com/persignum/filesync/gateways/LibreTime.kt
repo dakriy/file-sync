@@ -3,10 +3,13 @@ package com.persignum.filesync.gateways
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.java.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.cio.*
 import java.nio.file.Path
 import java.util.*
@@ -14,8 +17,9 @@ import kotlin.io.path.name
 import kotlin.io.path.pathString
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
-interface LibreTimeConnector {
+interface OutputConnector {
     suspend fun exists(filename: String): Boolean
     suspend fun upload(file: Path)
 }
@@ -29,7 +33,18 @@ class LibreTimeApi(
     private val libreTimeUrl: String,
     private val apiKey: String,
     private val httpClient: HttpClient,
-) : LibreTimeConnector {
+) : OutputConnector {
+    constructor(map: Map<String, String>) : this(
+        map["url"]!!,
+        map["apiKey"]!!,
+        HttpClient(Java) {
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                })
+            }
+        }
+    )
 
     private val logger = KotlinLogging.logger {}
     private val fileNames by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
@@ -79,7 +94,7 @@ class LibreTimeApi(
     }
 }
 
-object NullLibreTimeConnector : LibreTimeConnector {
+object NullOutputConnector : OutputConnector {
     override suspend fun exists(filename: String): Boolean {
         return false
     }

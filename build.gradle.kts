@@ -1,14 +1,19 @@
+import org.gradle.kotlin.dsl.support.kotlinCompilerOptions
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("jvm") version libs.versions.kotlin.get()
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
+    id("com.gradleup.shadow") version "8.3.3"
     id("application")
 }
 
 group = "com.persignum"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
+val projectMainClass = "com.persignum.filesync.MainKt"
 application {
-    mainClass.set("com.persignum.filesync.MainKt")
+    mainClass.set(projectMainClass)
 }
 
 repositories {
@@ -43,6 +48,18 @@ dependencies {
 }
 
 tasks {
+    jar {
+        manifest {
+            attributes["Main-Class"] = projectMainClass
+        }
+    }
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
+        }
+    }
+
     test {
         useJUnitPlatform()
     }

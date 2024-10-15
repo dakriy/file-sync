@@ -1,6 +1,7 @@
 package com.persignum.filesync
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.ajalt.clikt.parameters.types.path
@@ -9,7 +10,7 @@ import com.persignum.filesync.gateways.*
 import java.io.File
 import java.nio.file.FileSystems
 
-class CLI : CliktCommand() {
+class CLI : CliktCommand(name = "file-sync") {
     private val file by option("--file", "-f").help("Path to config file.").file().default(File("config.yaml"))
     private val dryRun by option("--dry-run", "-d").help("Disables all downloading/uploading.").flag()
     private val stopOnFail by option("--stop-on-fail", "-s").help("Stops processing on first error.").flag()
@@ -19,6 +20,11 @@ class CLI : CliktCommand() {
     override fun run() {
         logLevel?.let { logLevel ->
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", logLevel.lowercase())
+        }
+
+        if (!file.exists()) {
+            echo("Config file not found.")
+            throw ProgramResult(1)
         }
 
         val input = ConfigInput(DefaultSourceFactory, DefaultOutputFactory(FileSystems.getDefault())) {
