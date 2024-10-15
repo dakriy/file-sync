@@ -8,7 +8,7 @@ group = "com.persignum"
 version = "1.0-SNAPSHOT"
 
 application {
-    mainClass.set("com.persignum.CLI")
+    mainClass.set("com.persignum.filesync.MainKt")
 }
 
 repositories {
