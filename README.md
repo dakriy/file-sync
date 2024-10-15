@@ -17,5 +17,11 @@ TABLE OF CONTENTS HERE
 
 ## Use
 
-Download the package, unzip it and run `file-sync --help`
+### Compiling
+
+Compile with `./gradlew jar` on linux and `.\gradlew.bat jar` on Windows.
+
+
+### Running
+
 
