@@ -1,14 +1,18 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("jvm") version libs.versions.kotlin.get()
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
+    alias(libs.plugins.shadow)
     id("application")
 }
 
 group = "com.persignum"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
+val projectMainClass = "com.persignum.filesync.MainKt"
 application {
-    mainClass.set("com.persignum.CLI")
+    mainClass.set(projectMainClass)
 }
 
 repositories {
@@ -43,6 +47,23 @@ dependencies {
 }
 
 tasks {
+    jar {
+        manifest {
+            attributes["Main-Class"] = projectMainClass
+        }
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+
     test {
         useJUnitPlatform()
     }

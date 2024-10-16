@@ -18,7 +18,7 @@ import org.jaudiotagger.tag.reference.ID3V2Version
 
 class FileOutput(
     private val directory: Path,
-    private val libreTimeConnector: LibreTimeConnector,
+    private val outputConnector: OutputConnector,
     private val ffmpegOptions: String?,
     private val dryRun: Boolean,
     downloadLimits: Map<String, Int>,
@@ -62,7 +62,7 @@ class FileOutput(
     }
 
     private suspend fun pipeline(item: OutputItem, transformDir: Path) {
-        if (libreTimeConnector.exists(item.file)) {
+        if (outputConnector.exists(item.file)) {
             logger.info { "Skipping $item as it exists in LibreTime." }
             return
         }
@@ -76,10 +76,6 @@ class FileOutput(
 
         val outFile = transformDir / item.program / item.file
 
-        if (outFile.exists()) {
-            logger.warn { "Output file exists, do you have a naming scheme that can conflict?" }
-        }
-
         if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
             convert(file, outFile)
         } else file.copyTo(outFile, overwrite = true)
@@ -89,7 +85,7 @@ class FileOutput(
         setCreationTime(outFile, item)
 
         logger.info { "Uploading $item" }
-        libreTimeConnector.upload(outFile)
+        outputConnector.upload(outFile)
     }
 
     private fun createDirectories(items: List<OutputItem>, transformDir: Path) {
