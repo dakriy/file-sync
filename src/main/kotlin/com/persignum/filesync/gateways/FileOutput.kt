@@ -76,10 +76,6 @@ class FileOutput(
 
         val outFile = transformDir / item.program / item.file
 
-        if (outFile.exists()) {
-            logger.warn { "Output file exists, do you have a naming scheme that can conflict?" }
-        }
-
         if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
             convert(file, outFile)
         } else file.copyTo(outFile, overwrite = true)

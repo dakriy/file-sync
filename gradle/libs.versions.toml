@@ -3,6 +3,10 @@ slf4j = "2.0.16"
 konf = "1.1.2"
 ktor = "2.3.12"
 kotlin = "2.0.20"
+shadow = "8.3.3"
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 
 [libraries]
 konfCore = { group = "com.uchuhimo", name = "konf-core", version.ref = "konf" }
