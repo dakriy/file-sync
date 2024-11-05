@@ -19,6 +19,9 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
+      - name: setup FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
       - name: Gradle Build
         run: ./gradlew build
 
