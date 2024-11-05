@@ -122,12 +122,12 @@ for specifics.
 The `SourceImplSpec` defines program specific options about where and how to pull the program from
 the source since multiple programs can share a source.
 
-| Option     | Type         | Default  | Description                                                                                                                                           |
-|------------|--------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| name       | string       | Required | The name of a defined source to pull the program from.                                                                                                |
-| depth      | Int          | 1        | If there are folders underneath the defined path, the depth will allow you to set how far you want to traverse the directory structure to find items. |
-| path       | string       | null     | The path on the source where the program lives.                                                                                                       |
-| extensions | List<String> | null     | Allowed list of file extensions. By default, no file extension whitelist is applied.                                                                  |
+| Option     | Type         | Default  | Description                                                                                                                                                                                 |
+|------------|--------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name       | string       | Required | The name of a defined source to pull the program from.                                                                                                                                      |
+| depth      | Int          | 1        | If there are folders underneath the defined path, the depth will allow you to set how far you want to traverse the directory structure to find items. Depth 1 means current directory only. |
+| path       | string       | null     | The path on the source where the program lives.                                                                                                                                             |
+| extensions | List<String> | null     | Allowed list of file extensions. By default, no file extension whitelist is applied.                                                                                                        |
 
 #### Output
 

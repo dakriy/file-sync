@@ -177,11 +177,11 @@ class FTPSourceTest {
                 FileEntry("$HOME/top2/sub1/subsub1/file.txt", "/top2/sub1/subsub1"),
             )
         ) {
-            val items = connection(path = HOME, depth = 0).listItems().toList()
+            val items = connection(path = HOME, depth = 1).listItems().toList()
             items shouldHaveSize 1
             items.first().data().readAllBytes() shouldBe "/".toByteArray()
 
-            val items2 = connection(path = HOME, depth = 2).listItems().toList()
+            val items2 = connection(path = HOME, depth = 3).listItems().toList()
             items2 shouldHaveSize 7
         }
     }

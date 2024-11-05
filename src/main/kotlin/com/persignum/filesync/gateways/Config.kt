@@ -103,7 +103,7 @@ object DefaultSourceFactory : SourceFactory {
                         impl?.path,
                         spec.port ?: 21,
                     ),
-                    depth = impl?.depth ?: 0
+                    depth = impl?.depth ?: 1
                 )
             }
 

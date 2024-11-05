@@ -36,7 +36,7 @@ data class FTPSource(
         }
     }
 
-    private fun FTPClient.list(dir: String?, maxDepth: Int, current: Int = 0): List<FTPItem> {
+    private fun FTPClient.list(dir: String?, maxDepth: Int, current: Int = 1): List<FTPItem> {
         if (dir != null) {
             cwd(dir)
         }
