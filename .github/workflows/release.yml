@@ -2,13 +2,17 @@ name: Build, Push Docker Image, and Upload Artifact
 
 on:
   release:
+    types:
+      - published
     tags:
       - 'v*.*.*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
