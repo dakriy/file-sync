@@ -13,6 +13,7 @@ import org.junit.jupiter.api.assertThrows
 import com.persignum.filesync.domain.Item
 import com.persignum.filesync.gateways.FTPConnection
 import com.persignum.filesync.gateways.FTPSource
+import io.kotest.matchers.collections.shouldHaveSize
 import org.mockftpserver.fake.FakeFtpServer
 import org.mockftpserver.fake.UserAccount
 import org.mockftpserver.fake.filesystem.DirectoryEntry
@@ -52,8 +53,8 @@ class FTPSourceTest {
         }
     }
 
-    private fun connection(path: String? = null) =
-        FTPSource("", FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, PORT))
+    private fun connection(path: String? = null, depth: Int = 0) =
+        FTPSource("", FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, PORT), depth)
 
     private infix fun Sequence<Item>.shouldMatch(expected: List<Pair<String, Instant>>) {
         map { it.name to it.createdAt }.toList() shouldBe expected
@@ -146,10 +147,42 @@ class FTPSourceTest {
                 directories = listOf("$HOME/some dir"),
                 files = listOf(FileEntry("$HOME/some dir/test-file.txt", contents))
             ) {
-                connection().FTPItem("test-file.txt", Instant.now()).data()
+                connection().FTPItem("test-file.txt", Instant.now(), "").data()
             }
         }
 
         ex.message shouldBe "File not found: /test-file.txt"
+    }
+
+    @Test
+    fun `can get and download files recursively`() {
+        FTPServerTest(
+            directories = listOf(
+                "$HOME/top1",
+                "$HOME/top1/sub1",
+                "$HOME/top1/sub2",
+                "$HOME/top2",
+                "$HOME/top2/sub1",
+                "$HOME/top2/sub2",
+                "$HOME/top2/sub1/subsub1",
+            ),
+            files = listOf(
+                FileEntry("$HOME/file.txt", "/"),
+                FileEntry("$HOME/top1/file.txt", "/top1"),
+                FileEntry("$HOME/top2/file.txt", "/top2"),
+                FileEntry("$HOME/top1/sub1/file.txt", "/top1/sub1"),
+                FileEntry("$HOME/top2/sub1/file.txt", "/top2/sub1"),
+                FileEntry("$HOME/top1/sub2/file.txt", "/top1/sub2"),
+                FileEntry("$HOME/top2/sub2/file.txt", "/top2/sub2"),
+                FileEntry("$HOME/top2/sub1/subsub1/file.txt", "/top2/sub1/subsub1"),
+            )
+        ) {
+            val items = connection(path = HOME, depth = 0).listItems().toList()
+            items shouldHaveSize 1
+            items.first().data().readAllBytes() shouldBe "/".toByteArray()
+
+            val items2 = connection(path = HOME, depth = 2).listItems().toList()
+            items2 shouldHaveSize 7
+        }
     }
 }

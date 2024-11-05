@@ -102,7 +102,8 @@ object DefaultSourceFactory : SourceFactory {
                         spec.password,
                         impl?.path,
                         spec.port ?: 21,
-                    )
+                    ),
+                    depth = impl?.depth ?: 0
                 )
             }
 
@@ -133,7 +134,7 @@ class DefaultOutputFactory(
         limits: Map<String, Int>,
     ): OutputGateway {
         val connector = outputConnector
-            ?: buildLibreTimeConnector(config.connector)
+            ?: buildConnectorWithReflection(config.connector)
 
         return FileOutput(
             fileSystem.getPath(config.dir),
@@ -145,7 +146,7 @@ class DefaultOutputFactory(
         )
     }
 
-    private fun buildLibreTimeConnector(spec: OutputConnectorSpec?) =
+    private fun buildConnectorWithReflection(spec: OutputConnectorSpec?) =
         if (spec != null) {
             val clazz = this::class.java.classLoader.loadClass(spec.`class`)
 

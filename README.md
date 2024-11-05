@@ -16,23 +16,23 @@ A flexible and extensible audio file automation program written in Kotlin/JVM.
 ## Table of Contents
 
 * [Audio File Sync](#audio-file-sync)
-  * [Features](#features)
-  * [Table of Contents](#table-of-contents)
-  * [Use](#use)
-  * [Configuration](#configuration)
-    * [Sources](#sources)
-      * [Example](#example)
-    * [Programs](#programs)
-      * [ParseSpec](#parsespec)
-      * [SourceImplSpec](#sourceimplspec)
-      * [Output](#output)
-      * [Example](#example-1)
-    * [Output](#output-1)
-      * [OutputConnectorSpec](#outputconnectorspec)
-      * [Example](#example-2)
-  * [Supported Outputs](#supported-outputs)
-    * [LibreTime](#libretime)
-  * [Supported Audio Tags](#supported-audio-tags)
+    * [Features](#features)
+    * [Table of Contents](#table-of-contents)
+    * [Use](#use)
+    * [Configuration](#configuration)
+        * [Sources](#sources)
+            * [Example](#example)
+        * [Programs](#programs)
+            * [ParseSpec](#parsespec)
+            * [SourceImplSpec](#sourceimplspec)
+            * [Output](#output)
+            * [Example](#example-1)
+        * [Output](#output-1)
+            * [OutputConnectorSpec](#outputconnectorspec)
+            * [Example](#example-2)
+    * [Supported Outputs](#supported-outputs)
+        * [LibreTime](#libretime)
+    * [Supported Audio Tags](#supported-audio-tags)
 
 ## Use
 
@@ -75,7 +75,7 @@ A source has the following options:
 | password               | string     | null     | The password to use when connecting to the source.                                                                                          |
 | port                   | int        | null     | The port to use if it is not the default port for the source type.                                                                          |
 | class                  | string     | null     | Required when type is `Custom`. The java class name to use for the source. Must extend the `com.persignum.filesync.domain.Source` interface |
-| maxConcurrentDownloads | int        | 10       | The maximum number of concurrent downloads allowed from this source at a time.                                                              |
+| maxConcurrentDownloads | int        | 1        | The maximum number of concurrent downloads allowed from this source at a time.                                                              |
 
 #### Example
 
@@ -88,7 +88,7 @@ fileSync:
       username: steve
       password: secure!password
       port: 2783
-      maxConcurrentDownloads: 1
+      maxConcurrentDownloads: 10
 ```
 
 ### Programs
@@ -122,12 +122,12 @@ for specifics.
 The `SourceImplSpec` defines program specific options about where and how to pull the program from
 the source since multiple programs can share a source.
 
-| Option     | Type         | Default  | Description                                                                                                                                                                            |
-|------------|--------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| name       | string       | Required | The name of a defined source to pull the program from.                                                                                                                                 |
-| depth      | Int          | 1        | If there are folders underneath the defined path, the depth will allow you to set how far you want to traverse the directory structure to find items. Not supported for `FTP` sources. |
-| path       | string       | null     | The path on the source where the program lives.                                                                                                                                        |
-| extensions | List<String> | null     | Allowed list of file extensions. No file extension whitelist is applied.                                                                                                               |
+| Option     | Type         | Default  | Description                                                                                                                                           |
+|------------|--------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name       | string       | Required | The name of a defined source to pull the program from.                                                                                                |
+| depth      | Int          | 1        | If there are folders underneath the defined path, the depth will allow you to set how far you want to traverse the directory structure to find items. |
+| path       | string       | null     | The path on the source where the program lives.                                                                                                       |
+| extensions | List<String> | null     | Allowed list of file extensions. By default, no file extension whitelist is applied.                                                                  |
 
 #### Output
 
@@ -150,8 +150,8 @@ digit year, 2 digit month, and 2 digit day. Subtraction can be done with the `-`
 | tags     | Map<String, String> | []      | Tags to tag the audio with. Program parse regex capture groups can be used in tag values.                           |
 | limit    | Int                 | null    | How many items to download. Items older than the last limit item will be ignored.                                   |
 
+In addition to any capture groups there are a few usable always available replacements:
 
-In addition to any capture groups there are a few usable always available replacments:
 - **old_filename**: The original file name
 - **old_extension**: The original file extension
 - **raw_filename**: The original file name.file extension
@@ -159,7 +159,8 @@ In addition to any capture groups there are a few usable always available replac
 
 #### Example
 
-Bring all the program configuration together, here is what an example program using all the features might look like.
+Bring all the program configuration together, here is what an example program using all the features
+might look like.
 
 ```yaml
 fileSync:
@@ -238,12 +239,23 @@ that takes in a `Map<String, String>` for the properties.
 
 ### LibreTime
 
-[LibreTime](https://libretime.org/) is a radio automation platform. You could automate pulling files from different sources
+[LibreTime](https://libretime.org/) is a radio automation platform. You could automate pulling files
+from different sources
 and have them automatically tagged and uploaded into LibreTime.
 
 The LibreTime output connector class coordinate is `com.persignum.filesync.gateways.LibreTimeApi`.
 the `url` and `apiKey` properties are required for this connector to work. It uploads files that
 don't exist in your LibreTime instance.
+
+```yaml
+fileSync:
+  output:
+    connector:
+      class: com.persignum.filesync.gateways.LibreTimeApi
+      properties:
+        url: http://localhost:8080
+        apiKey: some_secret_api_key
+```
 
 ## Supported Audio Tags
 

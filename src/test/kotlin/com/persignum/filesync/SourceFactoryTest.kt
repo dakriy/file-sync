@@ -84,6 +84,7 @@ class SourceFactoryTest {
                   source:
                     name: src
                     path: /the/ftp/path
+                    depth: 10
             """.trimIndent()
         ) {
             programs().first().source shouldBe FTPSource(
@@ -94,7 +95,8 @@ class SourceFactoryTest {
                     password = "pass",
                     path = "/the/ftp/path",
                     port = 21,
-                )
+                ),
+                depth = 10,
             )
         }
 
