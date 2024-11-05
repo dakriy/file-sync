@@ -3,7 +3,7 @@ name: Build, Push Docker Image, and Upload Artifact
 on:
   release:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+*"
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -37,11 +37,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:latest .
+          docker build -t ghcr.io/${{ github.repository }}:${{ github.ref_name }} .
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
