@@ -8,7 +8,6 @@ plugins {
 }
 
 group = "com.persignum"
-version = "1.0"
 
 val projectMainClass = "com.persignum.filesync.MainKt"
 application {
