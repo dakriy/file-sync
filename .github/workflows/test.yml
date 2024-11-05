@@ -22,5 +22,8 @@ jobs:
           java-version: '17'  # Specify the desired Java version
           distribution: 'zulu'
 
+      - name: setup FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
       - name: Build with Gradle and run tests
         run: ./gradlew build
