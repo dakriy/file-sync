@@ -74,6 +74,11 @@ class FileSyncTest {
         config(
             """
             fileSync:
+              sources:
+                - name: hi
+                  type: Empty
+                - name: other
+                  type: Empty
               programs:
                 - name: programName1
                   source:
@@ -97,7 +102,7 @@ class FileSyncTest {
         addSource("hi", item1, item2)
         addSource("other", item3)
 
-        programsFilter("programName1")
+        sourcesFilter("hi")
         assert { result ->
             result shouldMatch listOf(item1, item2)
         }

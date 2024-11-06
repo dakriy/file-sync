@@ -37,6 +37,7 @@ infix fun Collection<OutputItem>.shouldMatch(items: Collection<TestOutputItem>) 
 
 @JvmName("shouldMatchItems")
 infix fun Collection<OutputItem>.shouldMatch(items: Collection<Item>) {
+    size shouldBe items.size
     zip(items).forEach { (actual, expected) ->
         actual shouldMatch expected
     }

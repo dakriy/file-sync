@@ -18,6 +18,7 @@ class TestHarness {
     var fs: FileSystem = Jimfs.newFileSystem()
     var useEmptyOutput = false
     var programs: MutableList<String> = mutableListOf()
+    var sourcesFilter: MutableList<String> = mutableListOf()
 
     private val sourceFactory = SourceFactory { program, spec, _ ->
         sources[spec.name] ?: sources[program] ?: EmptySource(spec.name)
@@ -37,6 +38,9 @@ class TestHarness {
 
     fun programsFilter(vararg program: String) {
         programs.addAll(program)
+    }
+    fun sourcesFilter(vararg source: String) {
+        sourcesFilter.addAll(source)
     }
 
     fun addSource(name: String, vararg items: MemoryItem) {
@@ -60,7 +64,7 @@ class TestHarness {
             outputGateway
         }
 
-        val input = ConfigInput(sourceFactory, outputFactory, programs) {
+        val input = ConfigInput(sourceFactory, outputFactory, programs, sourcesFilter) {
             from.yaml.string(yaml)
         }
 

@@ -161,8 +161,8 @@ object EmptyOutputGateway : OutputGateway {
 class ConfigInput(
     private val sourceFactory: SourceFactory,
     private val outputFactory: OutputFactory,
-    private val programs: List<String> = emptyList(),
-    private val sources: List<String> = emptyList(),
+    private val programsFilter: List<String> = emptyList(),
+    private val sourcesFilter: List<String> = emptyList(),
     sourceConfig: Config.() -> Config,
 ) : InputGateway {
     private val logger = KotlinLogging.logger {}
@@ -180,11 +180,11 @@ class ConfigInput(
     override fun programs(): List<Program> {
         val sources = config[FileSyncSpec.sources].associateBy { it.name }
         return config[FileSyncSpec.programs].mapNotNull { program ->
-            if (programs.isNotEmpty() && program.name !in programs) {
-                logger.debug { "Skipping ${program.name} as only $programs were requested." }
+            if (programsFilter.isNotEmpty() && program.name !in programsFilter) {
+                logger.debug { "Skipping ${program.name} as only $programsFilter were requested." }
                 return@mapNotNull null
             }
-            if (sources.isNotEmpty() && program.source?.name !in sources) {
+            if (sourcesFilter.isNotEmpty() && program.source?.name !in sourcesFilter) {
                 logger.debug { "Skipping ${program.name} as only programs in $sources were requested." }
                 return@mapNotNull null
             }
