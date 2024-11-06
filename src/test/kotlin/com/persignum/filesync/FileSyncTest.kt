@@ -3,11 +3,13 @@ package com.persignum.filesync
 import com.uchuhimo.konf.source.LoadException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.regex.PatternSyntaxException
 import kotlin.test.Test
 
@@ -975,6 +977,30 @@ class FileSyncTest {
 
         assert { results ->
             results shouldMatch listOf(item2, item3)
+        }
+    }
+
+    @Test
+    fun `should replace createdAt date`() = fileSyncTest {
+        config(
+            """
+            fileSync:
+              programs:
+                - name: program
+                  output:
+                    filename: hi {created_at:yyyy-MM-dd}
+             """.trimIndent()
+        )
+
+        val instant = Instant.now()
+        val item1 = MemoryItem("file 1.mp3", createdAt = instant)
+
+        addSource("program", item1)
+
+        val pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault()).format(instant)
+        assert { results ->
+            results shouldHaveSize 1
+            results.first().fileName shouldBe "hi $pattern"
         }
     }
 }

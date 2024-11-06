@@ -23,19 +23,20 @@ interface Item {
     }
 }
 
-data class ParsedItem(
+class ParsedItem(
     val item: Item,
-    val captureGroups: Map<String, String> = emptyMap(),
-    val dates: Map<String, LocalDateTime> = emptyMap(),
+    captureGroups: Map<String, String> = emptyMap(),
+    parsedDates: Map<String, LocalDateTime> = emptyMap(),
 ) : Item by item {
     private val nameAndExtension = nameAndExtension()
 
+    private val createdAtDate = LocalDateTime.ofInstant(item.createdAt, ZoneId.systemDefault())
+    private val dates = mapOf("created_at" to createdAtDate) + parsedDates
     private val replacements = mapOf(
         "old_filename" to nameAndExtension.first,
         "old_extension" to nameAndExtension.second,
         "raw_filename" to item.name,
-        "created_at" to LocalDateTime.ofInstant(item.createdAt, ZoneId.systemDefault()).toString(),
-    ) + captureGroups
+    ) + captureGroups + dates.mapValues { it.value.toString() }
 
     private val dateFormatSignatures = dates.keys.map { "{$it" }.sortedByDescending { it.length }
 
@@ -86,7 +87,10 @@ data class ParsedItem(
     }
 
     fun interpolate(str: String): String {
-        var dated = str
+        var dated = replacements.entries.fold(str) { acc, (key, value) ->
+            acc.replace("{$key}", value)
+        }
+
         var found: Pair<Int, String>?
         while (true) {
             found = dated.findAnyOf(dateFormatSignatures)
@@ -94,9 +98,7 @@ data class ParsedItem(
             dated = dated.replaceDate(found)
         }
 
-        return replacements.entries.fold(dated) { acc, (key, value) ->
-            acc.replace("{$key}", value)
-        }
+        return dated
     }
 }
 
