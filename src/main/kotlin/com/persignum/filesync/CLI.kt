@@ -11,11 +11,17 @@ import java.io.File
 import java.nio.file.FileSystems
 
 class CLI : CliktCommand(name = "file-sync") {
-    private val file by option("--file", "-f").help("Path to config file.").file().default(File("config.yaml"))
-    private val dryRun by option("--dry-run", "-d").help("Disables all downloading/uploading.").flag()
-    private val stopOnFail by option("--stop-on-fail", "-s").help("Stops processing on first error.").flag()
+    private val file by option("--file", "-f").help("Path to config file.").file()
+        .default(File("config.yaml"))
+    private val dryRun by option("--dry-run", "-d").help("Disables all downloading/uploading.")
+        .flag()
+    private val stopOnFail by option(
+        "--stop-on-fail",
+        "-s"
+    ).help("Stops processing on first error.").flag()
     private val outputDir by option("--output-dir", "-o").help("Output directory.").path()
     private val logLevel by option("--log-level", "-l").help("Sets the log level.")
+    private val programs by option("--program", "-p").help("Process single program").multiple()
 
     override fun run() {
         logLevel?.let { logLevel ->
@@ -27,12 +33,17 @@ class CLI : CliktCommand(name = "file-sync") {
             throw ProgramResult(1)
         }
 
-        val input = ConfigInput(DefaultSourceFactory, DefaultOutputFactory(FileSystems.getDefault())) {
+        val input = ConfigInput(
+            DefaultSourceFactory,
+            DefaultOutputFactory(FileSystems.getDefault()),
+            programs,
+        ) {
             from.file(file)
         }
 
         if (outputDir != null) {
-            input.config[FileSyncSpec.output] = input.config[FileSyncSpec.output].copy(dir = outputDir.toString())
+            input.config[FileSyncSpec.output] =
+                input.config[FileSyncSpec.output].copy(dir = outputDir.toString())
         }
 
         if (stopOnFail) {
@@ -40,7 +51,8 @@ class CLI : CliktCommand(name = "file-sync") {
         }
 
         if (dryRun) {
-            input.config[FileSyncSpec.output] = input.config[FileSyncSpec.output].copy(dryRun = true)
+            input.config[FileSyncSpec.output] =
+                input.config[FileSyncSpec.output].copy(dryRun = true)
         }
 
         val fileSync = FileSync(input)

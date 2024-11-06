@@ -45,6 +45,31 @@ class FileSyncTest {
     }
 
     @Test
+    fun `should skip programs given program filters`() = fileSyncTest {
+        config(
+            """
+            fileSync:
+              programs:
+                - name: programName1
+                - name: programName2
+                - name: programName3
+             """.trimIndent()
+        )
+
+        val item1 = MemoryItem("item 1")
+        val item2 = MemoryItem("item 2")
+        val item3 = MemoryItem("item 3")
+        addSource("programName1", item1)
+        addSource("programName2", item2)
+        addSource("programName3", item3)
+
+        programsFilter("programName1")
+        assert { result ->
+            result shouldMatch listOf(item1)
+        }
+    }
+
+    @Test
     fun `should return 2 items given 2 items`() = fileSyncTest {
         config(
             """

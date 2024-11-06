@@ -17,6 +17,7 @@ class TestHarness {
     val libreTimeConnector = OutputStub()
     var fs: FileSystem = Jimfs.newFileSystem()
     var useEmptyOutput = false
+    var programs: MutableList<String> = mutableListOf()
 
     private val sourceFactory = SourceFactory { program, spec, _ ->
         sources[spec.name] ?: sources[program] ?: EmptySource(spec.name)
@@ -32,6 +33,10 @@ class TestHarness {
 
     fun assert(block: (List<OutputItem>) -> Unit) {
         assertBlock = block
+    }
+
+    fun programsFilter(vararg program: String) {
+        programs.addAll(program)
     }
 
     fun addSource(name: String, vararg items: MemoryItem) {
@@ -55,7 +60,7 @@ class TestHarness {
             outputGateway
         }
 
-        val input = ConfigInput(sourceFactory, outputFactory) {
+        val input = ConfigInput(sourceFactory, outputFactory, programs) {
             from.yaml.string(yaml)
         }
 
