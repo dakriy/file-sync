@@ -37,7 +37,8 @@ A flexible and extensible audio file automation program written in Kotlin/JVM.
 ## Use
 
 To run, download the latest release from GitHub releases, unzip the zip file, and run
-`bin/file-sync --help`. Or build and use the docker container.
+`bin/file-sync --help`. Or build and use the docker container. Docker container also lives at
+`ghcr.io/dakriy/file-sync:latest`.
 
 ## Configuration
 
