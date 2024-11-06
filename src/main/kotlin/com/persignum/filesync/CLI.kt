@@ -22,6 +22,7 @@ class CLI : CliktCommand(name = "file-sync") {
     private val outputDir by option("--output-dir", "-o").help("Output directory.").path()
     private val logLevel by option("--log-level", "-l").help("Sets the log level.")
     private val programs by option("--program", "-p").help("Process single program").multiple()
+    private val sources by option("--source", "-s").help("Process all programs from a source.").multiple()
 
     override fun run() {
         logLevel?.let { logLevel ->
@@ -37,6 +38,7 @@ class CLI : CliktCommand(name = "file-sync") {
             DefaultSourceFactory,
             DefaultOutputFactory(FileSystems.getDefault()),
             programs,
+            sources,
         ) {
             from.file(file)
         }

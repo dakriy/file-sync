@@ -70,6 +70,7 @@ class LibreTimeApi(
     override suspend fun exists(filename: String) = filename in fileNames
 
     override suspend fun upload(file: Path) {
+        logger.info { "Uploading ${file.name} to LibreTime..." }
         val response: HttpResponse = httpClient.submitFormWithBinaryData(
             url = "$libreTimeUrl/rest/media",
             formData = formData {

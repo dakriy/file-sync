@@ -23,7 +23,7 @@ data class SourceSpec(
     val password: String? = null,
     val port: Int? = null,
     val `class`: String? = null,
-    val maxConcurrentDownloads: Int = 10,
+    val maxConcurrentDownloads: Int = 1,
 )
 
 data class SourceImplSpec(
@@ -162,6 +162,7 @@ class ConfigInput(
     private val sourceFactory: SourceFactory,
     private val outputFactory: OutputFactory,
     private val programs: List<String> = emptyList(),
+    private val sources: List<String> = emptyList(),
     sourceConfig: Config.() -> Config,
 ) : InputGateway {
     private val logger = KotlinLogging.logger {}
@@ -181,6 +182,10 @@ class ConfigInput(
         return config[FileSyncSpec.programs].mapNotNull { program ->
             if (programs.isNotEmpty() && program.name !in programs) {
                 logger.debug { "Skipping ${program.name} as only $programs were requested." }
+                return@mapNotNull null
+            }
+            if (sources.isNotEmpty() && program.source?.name !in sources) {
+                logger.debug { "Skipping ${program.name} as only programs in $sources were requested." }
                 return@mapNotNull null
             }
 

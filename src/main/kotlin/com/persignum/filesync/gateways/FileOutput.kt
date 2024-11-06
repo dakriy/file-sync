@@ -84,7 +84,6 @@ class FileOutput(
 
         setCreationTime(outFile, item)
 
-        logger.info { "Uploading $item" }
         outputConnector.upload(outFile)
     }
 
