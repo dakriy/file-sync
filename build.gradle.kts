@@ -12,6 +12,16 @@ group = "com.persignum"
 val projectMainClass = "com.persignum.filesync.MainKt"
 application {
     mainClass.set(projectMainClass)
+    applicationDefaultJvmArgs = listOf(
+        "--add-opens", "java.base/sun.security.util=ALL-UNNAMED",
+        "--add-opens", "java.base/sun.security.ssl=ALL-UNNAMED",
+        // https://stackoverflow.com/questions/70903926/how-to-establish-a-ftps-data-connection-to-a-filezilla-server-1-2-0
+        // libssl and openssl have issues with each other with TLS1.3 so we only allow TLS1.2
+        "-Djdk.tls.client.protocols=TLSv1.2",
+        "-Djdk.tls.allowLegacyResumption=true",
+        "-Djdk.tls.useExtendedMasterSecret=false",
+        "-Djdk.tls.client.enableSessionTicketExtension=false",
+    )
 }
 
 repositories {

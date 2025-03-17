@@ -20,6 +20,7 @@ data class FTPConnection(
     val password: String? = null,
     val path: String? = null,
     val security: Security = Security.None,
+    val tlsResumption: Boolean = true,
     val ignoreCertificate: Boolean = false,
 ) {
     enum class Security {
@@ -79,6 +80,7 @@ data class FTPSource(
                 FTPConnection.Security.FTPS -> FTPClient.SECURITY_FTPS
                 FTPConnection.Security.FTPES -> FTPClient.SECURITY_FTPES
             }
+            reuseSession = connection.tlsResumption
 
             if (security != FTPClient.SECURITY_FTP && connection.ignoreCertificate) {
                 val trustManager = arrayOf<TrustManager>(object : X509TrustManager {

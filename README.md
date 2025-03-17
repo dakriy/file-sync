@@ -78,16 +78,17 @@ The FTP source pulls from an FTP server.
 
 A source has the following options:
 
-| Option                 | Type       | Default              | Description                                                                                                                  |
-|------------------------|------------|----------------------|------------------------------------------------------------------------------------------------------------------------------|
-| name                   | string     | Required             | The name of the source.                                                                                                      |
-| type                   | SourceType | Required             | Should be `FTP` for this source.                                                                                             |
-| url                    | string     | Required             | The hostname or IP of the FTP server. Can be prefixed with `ftp://`, `ftps://` or `ftpes://` for different security options. |
-| username               | string     | anonymous            | The username to use when connecting to the ftp server.                                                                       |
-| password               | string     | anonymous@domain.com | The password to use when connecting to the ftp server.                                                                       |
-| port                   | int        | 21                   | The port to use to connect to the FTP server.                                                                                |
-| ignoreCertificate      | boolean    | false                | If enabled, the SSL certificate check will be skipped and any certificates will be blindly accepted.                         |
-| maxConcurrentDownloads | int        | 1                    | The maximum number of concurrent downloads allowed from this source at a time.                                               |
+| Option                 | Type       | Default              | Description                                                                                                                                           |
+|------------------------|------------|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name                   | string     | Required             | The name of the source.                                                                                                                               |
+| type                   | SourceType | Required             | Should be `FTP` for this source.                                                                                                                      |
+| url                    | string     | Required             | The hostname or IP of the FTP server. Can be prefixed with `ftp://`, `ftps://` or `ftpes://` to force different security options. Should auto-detect. |
+| username               | string     | anonymous            | The username to use when connecting to the ftp server.                                                                                                |
+| password               | string     | anonymous@domain.com | The password to use when connecting to the ftp server.                                                                                                |
+| port                   | int        | 21                   | The port to use to connect to the FTP server.                                                                                                         |
+| ignoreCertificate      | boolean    | false                | If enabled, the SSL certificate check will be skipped and any certificates will be blindly accepted.                                                  |
+| tlsResumption          | boolean    | true                 | If enabled, the control channel tls session will be re-used for the data channel connection. Most FTP servers on TLS require this.                    |
+| maxConcurrentDownloads | int        | 1                    | The maximum number of concurrent downloads allowed from this source at a time.                                                                        |
 
 #### NextCloud
 

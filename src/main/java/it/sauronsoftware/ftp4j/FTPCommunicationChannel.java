@@ -18,14 +18,15 @@
  */
 package it.sauronsoftware.ftp4j;
 
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
-
-import javax.net.ssl.SSLSocketFactory;
 
 /**
  * This class is used to represent a communication channel with a FTP server.
@@ -262,7 +263,7 @@ public class FTPCommunicationChannel {
 	 *             If a I/O error occurs.
 	 * @since 1.4
 	 */
-	public void ssl(SSLSocketFactory sslSocketFactory) throws IOException {
+	public SSLSession ssl(SSLSocketFactory sslSocketFactory) throws IOException {
 		String host = connection.getInetAddress().getHostName();
 		int port = connection.getPort();
 		connection = sslSocketFactory.createSocket(connection, host, port, true);
@@ -270,6 +271,8 @@ public class FTPCommunicationChannel {
 		OutputStream outStream = connection.getOutputStream();
 		reader = new NVTASCIIReader(inStream, charsetName);
 		writer = new NVTASCIIWriter(outStream, charsetName);
-	}
 
+		//Get the session and send it back to reuse for data channel
+        return ((SSLSocket) connection).getSession();
+	}
 }

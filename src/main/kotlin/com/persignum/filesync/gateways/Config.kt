@@ -23,6 +23,7 @@ data class SourceSpec(
     val password: String? = null,
     val port: Int? = null,
     val ignoreCertificate: Boolean = false,
+    val tlsResumption: Boolean = true,
     val `class`: String? = null,
     val maxConcurrentDownloads: Int = 1,
 )
@@ -108,13 +109,14 @@ object DefaultSourceFactory : SourceFactory {
 
                 FTPSource(
                     spec.name, FTPConnection(
-                        url,
-                        spec.port ?: 21,
-                        spec.username,
-                        spec.password,
-                        impl?.path,
-                        security,
-                        spec.ignoreCertificate,
+                        url = url,
+                        port = spec.port ?: 21,
+                        username = spec.username,
+                        password = spec.password,
+                        path = impl?.path,
+                        security = security,
+                        tlsResumption = spec.tlsResumption,
+                        ignoreCertificate = spec.ignoreCertificate,
                     ),
                     depth = impl?.depth ?: 1
                 )
