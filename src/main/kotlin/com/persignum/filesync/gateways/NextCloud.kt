@@ -2,10 +2,10 @@ package com.persignum.filesync.gateways
 
 import com.github.sardine.SardineFactory
 import io.ktor.http.*
-import java.io.InputStream
 import java.time.Instant
 import com.persignum.filesync.domain.Item
 import com.persignum.filesync.domain.Source
+import java.io.OutputStream
 
 data class NextCloudSource(
     override val name: String,
@@ -20,10 +20,10 @@ data class NextCloudSource(
         override val createdAt: Instant,
         val path: String,
     ) : Item {
-        override suspend fun data(): InputStream {
+        override suspend fun data(stream: OutputStream) {
             val fileLocation = "$url${path.encodeURLPath()}"
             val sardine = SardineFactory.begin(username, password)
-            return sardine.get(fileLocation)
+            sardine.get(fileLocation).copyTo(stream)
         }
     }
 

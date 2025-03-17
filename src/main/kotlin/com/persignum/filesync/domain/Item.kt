@@ -1,6 +1,6 @@
 package com.persignum.filesync.domain
 
-import java.io.InputStream
+import java.io.OutputStream
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -10,7 +10,7 @@ interface Item {
 
     val createdAt: Instant
 
-    suspend fun data(): InputStream
+    suspend fun data(stream: OutputStream)
 
     fun computeFormatFromName(): String = if ('.' in name) {
         name.substringAfterLast('.')

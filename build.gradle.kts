@@ -24,7 +24,6 @@ dependencies {
     implementation(libs.konfYaml)
     implementation(libs.kotlinLogger)
     implementation(libs.kotlinCoroutinesCore)
-    implementation(libs.commons)
     implementation(libs.slf4j)
     implementation(libs.ktorClient)
     implementation(libs.ktorClientJava)

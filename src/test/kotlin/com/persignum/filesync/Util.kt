@@ -4,12 +4,18 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import com.persignum.filesync.domain.Item
 import com.persignum.filesync.domain.OutputItem
+import java.io.ByteArrayOutputStream
 
+suspend fun Item.data(): ByteArray {
+    val buffer = ByteArrayOutputStream()
+    data(buffer)
+    return buffer.toByteArray()
+}
 
 infix fun Item.shouldMatch(item: Item) {
     name shouldBe item.name
     runBlocking {
-        data().readAllBytes() shouldBe item.data().readAllBytes()
+        data() shouldBe item.data()
     }
     createdAt shouldBe item.createdAt
 }
@@ -24,7 +30,7 @@ infix fun OutputItem.shouldMatch(o: TestOutputItem) {
     "$this.$format" shouldBe o.path
     tags shouldBe o.tags
     runBlocking {
-        item.data().readAllBytes() shouldBe o.data
+        item.data() shouldBe o.data
     }
 }
 

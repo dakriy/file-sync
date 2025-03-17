@@ -1,7 +1,6 @@
 package com.persignum.filesync.gateways
 
 import io.ktor.http.*
-import java.io.InputStream
 import java.net.URL
 import java.time.Instant
 import java.time.LocalDate
@@ -12,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import com.persignum.filesync.domain.Item
 import com.persignum.filesync.domain.Source
+import java.io.OutputStream
 
 @Suppress("unused")
 class AmazingFactsSource(
@@ -28,9 +28,9 @@ class AmazingFactsSource(
         override val createdAt: Instant,
         private val downloadUrl: String,
     ) : Item {
-        override suspend fun data(): InputStream {
-            return withContext(Dispatchers.IO) {
-                URL(downloadUrl).openStream()
+        override suspend fun data(stream: OutputStream) {
+            withContext(Dispatchers.IO) {
+                URL(downloadUrl).openStream().copyTo(stream)
             }
         }
     }

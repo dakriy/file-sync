@@ -103,20 +103,13 @@ class FileOutput(
             semaphore?.acquire()
             logger.info { "Downloading $file" }
             try {
-                item.data().use { inputStream ->
-                    Files.newOutputStream(
-                        file,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.WRITE,
-                        StandardOpenOption.TRUNCATE_EXISTING
-                    ).use { outputStream ->
-                        val buffer = ByteArray(8192)
-                        var bytesRead: Int
-
-                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                            outputStream.write(buffer, 0, bytesRead)
-                        }
-                    }
+                Files.newOutputStream(
+                    file,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+                ).use { outputStream ->
+                    item.data(outputStream)
                 }
             } finally {
                 semaphore?.release()

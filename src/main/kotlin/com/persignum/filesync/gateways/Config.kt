@@ -101,6 +101,7 @@ object DefaultSourceFactory : SourceFactory {
                         spec.username,
                         spec.password,
                         impl?.path,
+                        FTPConnection.Security.None,
                         spec.port ?: 21,
                     ),
                     depth = impl?.depth ?: 1

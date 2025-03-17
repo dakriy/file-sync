@@ -14,11 +14,14 @@ import com.persignum.filesync.domain.Item
 import com.persignum.filesync.gateways.FTPConnection
 import com.persignum.filesync.gateways.FTPSource
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.string.shouldContain
+import it.sauronsoftware.ftp4j.FTPException
 import org.mockftpserver.fake.FakeFtpServer
 import org.mockftpserver.fake.UserAccount
 import org.mockftpserver.fake.filesystem.DirectoryEntry
 import org.mockftpserver.fake.filesystem.FileEntry
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem
+import java.io.ByteArrayOutputStream
 
 
 class FTPSourceTest {
@@ -54,7 +57,7 @@ class FTPSourceTest {
     }
 
     private fun connection(path: String? = null, depth: Int = 0) =
-        FTPSource("", FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, PORT), depth)
+        FTPSource("", FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, FTPConnection.Security.None, PORT), depth)
 
     private infix fun Sequence<Item>.shouldMatch(expected: List<Pair<String, Instant>>) {
         map { it.name to it.createdAt }.toList() shouldBe expected
@@ -62,24 +65,24 @@ class FTPSourceTest {
 
     @Test
     fun `given invalid username it fails`() {
-        val ex = assertThrows<IOException> {
+        val ex = assertThrows<FTPException> {
             FTPServerTest("user2") {
                 connection().listItems()
             }
         }
 
-        ex.message shouldBe "Unable to login to FTP server"
+        ex.message shouldBe "UserAccount missing or invalid for user [user]"
     }
 
     @Test
     fun `given invalid password it fails`() {
-        val ex = assertThrows<IOException> {
+        val ex = assertThrows<FTPException> {
             FTPServerTest(password = "trip it up lol") {
                 connection().listItems()
             }
         }
 
-        ex.message shouldBe "Unable to login to FTP server"
+        ex.message shouldBe "Not logged in."
     }
 
     @Test
@@ -91,9 +94,13 @@ class FTPSourceTest {
 
     @Test
     fun `no files in non-existent directory`() {
-        FTPServerTest {
-            connection(path = "/stupid").listItems().shouldBeEmpty()
+        val ex = shouldThrow<FTPException> {
+            FTPServerTest {
+                connection(path = "/stupid").listItems().shouldBeEmpty()
+            }
         }
+
+        ex.message shouldBe "[/stupid] does not exist."
     }
 
     @Test
@@ -134,15 +141,15 @@ class FTPSourceTest {
             directories = listOf("$HOME/some dir"),
             files = listOf(FileEntry("$HOME/some dir/test-file.txt", contents))
         ) {
-            val result = connection(path = "$HOME/some dir").listItems().first().data()
-            result.readAllBytes() shouldBe contents.toByteArray()
+            val data = connection(path = "$HOME/some dir").listItems().first().data()
+            data shouldBe contents.toByteArray()
         }
     }
 
     @Test
     fun `downloading invalid file throws a file not found`() {
         val contents = "The file contents"
-        val ex = shouldThrow<IOException> {
+        val ex = shouldThrow<FTPException> {
             FTPServerTest(
                 directories = listOf("$HOME/some dir"),
                 files = listOf(FileEntry("$HOME/some dir/test-file.txt", contents))
@@ -151,7 +158,7 @@ class FTPSourceTest {
             }
         }
 
-        ex.message shouldBe "File not found: /test-file.txt"
+        ex.message shouldBe "[/test-file.txt] does not exist."
     }
 
     @Test
@@ -179,7 +186,7 @@ class FTPSourceTest {
         ) {
             val items = connection(path = HOME, depth = 1).listItems().toList()
             items shouldHaveSize 1
-            items.first().data().readAllBytes() shouldBe "/".toByteArray()
+            items.first().data() shouldBe "/".toByteArray()
 
             val items2 = connection(path = HOME, depth = 3).listItems().toList()
             items2 shouldHaveSize 7

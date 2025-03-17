@@ -1,7 +1,10 @@
 package com.persignum.filesync
 
-import java.time.Instant
 import com.persignum.filesync.domain.Item
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.OutputStream
+import java.time.Instant
 
 data class MemoryItem(
     override val name: String,
@@ -9,7 +12,11 @@ data class MemoryItem(
     val data: ByteArray = ByteArray(0),
     private val dataHook: suspend () -> Unit = {},
 ) : Item {
-    override suspend fun data() = data.also { dataHook() }.inputStream()
+    override suspend fun data(stream: OutputStream) =
+        withContext(Dispatchers.IO) {
+            dataHook()
+            stream.write(data)
+        }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

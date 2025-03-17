@@ -16,7 +16,6 @@ kotlinCoroutinesCore = { group = "org.jetbrains.kotlinx", name = "kotlinx-corout
 slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 slf4jSimple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 kotestCore = { group = "io.kotest", name = "kotest-assertions-core-jvm", version = "5.9.1" }
-commons = { group = "commons-net", name = "commons-net", version = "3.11.1"}
 ktorClient = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktorClientJava = { group = "io.ktor", name = "ktor-client-java", version.ref = "ktor" }
 ktorContentNegotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
