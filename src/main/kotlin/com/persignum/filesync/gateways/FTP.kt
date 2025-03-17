@@ -1,19 +1,29 @@
 package com.persignum.filesync.gateways
 
-import java.time.Instant
 import com.persignum.filesync.domain.Item
 import com.persignum.filesync.domain.Source
 import it.sauronsoftware.ftp4j.FTPClient
 import it.sauronsoftware.ftp4j.FTPFile
 import java.io.OutputStream
+import java.security.KeyManagementException
+import java.security.NoSuchAlgorithmException
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.time.Instant
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+
 
 data class FTPConnection(
     val url: String,
+    val port: Int,
     val username: String? = null,
     val password: String? = null,
     val path: String? = null,
     val security: Security = Security.None,
-    val port: Int,
+    val verifySSLCertificate: Boolean = true,
 ) {
     enum class Security {
         None,
@@ -71,6 +81,22 @@ data class FTPSource(
                 FTPConnection.Security.None -> FTPClient.SECURITY_FTP
                 FTPConnection.Security.FTPS -> FTPClient.SECURITY_FTPS
                 FTPConnection.Security.FTPES -> FTPClient.SECURITY_FTPES
+            }
+
+            if ((security == FTPClient.SECURITY_FTPS || security == FTPClient.SECURITY_FTPES) && !connection.verifySSLCertificate) {
+                val trustManager = arrayOf<TrustManager>(object : X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<X509Certificate>? {
+                        return null
+                    }
+                    override fun checkClientTrusted(certs: Array<X509Certificate?>?, authType: String?) {
+                    }
+                    override fun checkServerTrusted(certs: Array<X509Certificate?>?, authType: String?) {
+                    }
+                })
+                val sslContext = SSLContext.getInstance("SSL")
+                sslContext.init(null, trustManager, SecureRandom())
+                val sslSocketFactory = sslContext.socketFactory
+                setSSLSocketFactory(sslSocketFactory)
             }
         }
 

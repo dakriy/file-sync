@@ -57,7 +57,7 @@ class FTPSourceTest {
     }
 
     private fun connection(path: String? = null, depth: Int = 0) =
-        FTPSource("", FTPConnection("localhost", DEFAULT_USER, DEFAULT_PASS, path, FTPConnection.Security.None, PORT), depth)
+        FTPSource("", FTPConnection("localhost", PORT, DEFAULT_USER, DEFAULT_PASS, path, FTPConnection.Security.None, true), depth)
 
     private infix fun Sequence<Item>.shouldMatch(expected: List<Pair<String, Instant>>) {
         map { it.name to it.createdAt }.toList() shouldBe expected

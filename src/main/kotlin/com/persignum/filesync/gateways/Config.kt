@@ -98,11 +98,12 @@ object DefaultSourceFactory : SourceFactory {
                 FTPSource(
                     spec.name, FTPConnection(
                         spec.url ?: missingFieldError("url", SourceType.FTP, spec.name),
+                        spec.port ?: 21,
                         spec.username,
                         spec.password,
                         impl?.path,
                         FTPConnection.Security.None,
-                        spec.port ?: 21,
+                        true,
                     ),
                     depth = impl?.depth ?: 1
                 )
