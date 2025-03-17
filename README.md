@@ -21,6 +21,10 @@ A flexible and extensible audio file automation program written in Kotlin/JVM.
     * [Use](#use)
     * [Configuration](#configuration)
         * [Sources](#sources)
+            * [FTP](#ftp)
+            * [NextCloud](#nextcloud)
+            * [Custom](#custom)
+            * [Empty](#empty)
             * [Example](#example)
         * [Programs](#programs)
             * [ParseSpec](#parsespec)
@@ -65,18 +69,65 @@ fileSync:
 
 ### Sources
 
+A source defines a server to download content for programs. Multiple programs can have the same source.
+There are several different types of sources
+
+#### FTP
+
+The FTP source pulls from an FTP server.
+
 A source has the following options:
 
-| Option                 | Type       | Default  | Description                                                                                                                                 |
-|------------------------|------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| name                   | string     | Required | The name of the source.                                                                                                                     |
-| type                   | SourceType | Required | Can be `Empty`, `FTP`, `NextCloud`, or `Custom`.                                                                                            |
-| url                    | string     | null     | The url of the source. Used for `FTP` and `NextCloud`.                                                                                      |
-| username               | string     | null     | The username to use when connecting to the source.                                                                                          |
-| password               | string     | null     | The password to use when connecting to the source.                                                                                          |
-| port                   | int        | null     | The port to use if it is not the default port for the source type.                                                                          |
-| class                  | string     | null     | Required when type is `Custom`. The java class name to use for the source. Must extend the `com.persignum.filesync.domain.Source` interface |
-| maxConcurrentDownloads | int        | 1        | The maximum number of concurrent downloads allowed from this source at a time.                                                              |
+| Option                 | Type       | Default              | Description                                                                                                                  |
+|------------------------|------------|----------------------|------------------------------------------------------------------------------------------------------------------------------|
+| name                   | string     | Required             | The name of the source.                                                                                                      |
+| type                   | SourceType | Required             | Should be `FTP` for this source.                                                                                             |
+| url                    | string     | Required             | The hostname or IP of the FTP server. Can be prefixed with `ftp://`, `ftps://` or `ftpes://` for different security options. |
+| username               | string     | anonymous            | The username to use when connecting to the ftp server.                                                                       |
+| password               | string     | anonymous@domain.com | The password to use when connecting to the ftp server.                                                                       |
+| port                   | int        | 21                   | The port to use to connect to the FTP server.                                                                                |
+| ignoreCertificate      | boolean    | false                | If enabled, the SSL certificate check will be skipped and any certificates will be blindly accepted.                         |
+| maxConcurrentDownloads | int        | 1                    | The maximum number of concurrent downloads allowed from this source at a time.                                               |
+
+#### NextCloud
+
+The NextCloud source pulls from a NextCloud server.
+
+it has the following options
+
+| Option                 | Type       | Default  | Description                                                                    |
+|------------------------|------------|----------|--------------------------------------------------------------------------------|
+| name                   | string     | Required | The name of the source.                                                        |
+| type                   | SourceType | Required | Should be `NextCloud` for this source.                                         |
+| url                    | string     | Required | The HTTP url of the NextCloud server.                                          |
+| username               | string     | Required | The username to use when connecting to the source.                             |
+| password               | string     | null     | The password to use when connecting to the source.                             |
+| maxConcurrentDownloads | int        | 1        | The maximum number of concurrent downloads allowed from this source at a time. |
+
+#### Custom
+
+The custom source lets you define your own custom source.
+Create a class that extends the `com.persignum.filesync.domain.Source` interface and place it on the classpath.
+The constructor must take in the following arguments in the given order:
+
+| Type                                             | Description                              |
+|--------------------------------------------------|------------------------------------------|
+| `String`                                         | The name of the source.                  |
+| `com.persignum.filesync.gateways.SourceSpec`     | The main source definition.              |
+| `com.persignum.filesync.gateways.SourceImplSpec` | The program specific source definitions. |
+
+Declaring a custom source has the following options:
+
+| Option                 | Type       | Default  | Description                                                                                                 |
+|------------------------|------------|----------|-------------------------------------------------------------------------------------------------------------|
+| name                   | string     | Required | The name of the source.                                                                                     |
+| type                   | SourceType | Required | `Custom` for this source.                                                                                   |
+| class                  | string     | Required | The java class name to use for the source. Must extend the `com.persignum.filesync.domain.Source` interface |
+| maxConcurrentDownloads | int        | 1        | The maximum number of concurrent downloads allowed from this source at a time.                              |
+
+#### Empty
+
+A dummy source used for testing. It never returns any files.
 
 #### Example
 
@@ -85,11 +136,23 @@ fileSync:
   sources:
     - name: government ftp server
       type: FTP
-      url: ftp.example.com
+      url: ftps://ftp.example.com
       username: steve
       password: secure!password
       port: 2783
       maxConcurrentDownloads: 10
+
+    - name: "uncle's nextcloud server"
+      type: NextCloud
+      url: https://my.only.uncle.com
+      username: steve
+      password: secure!password
+      maxConcurrentDownloads: 2
+
+    - name: custom source
+      type: Custom
+      class: my.package.coordinate.CustomSource
+      maxConcurrentDownloads: 123
 ```
 
 ### Programs

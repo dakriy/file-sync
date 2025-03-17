@@ -5,13 +5,10 @@ import com.persignum.filesync.domain.Source
 import it.sauronsoftware.ftp4j.FTPClient
 import it.sauronsoftware.ftp4j.FTPFile
 import java.io.OutputStream
-import java.security.KeyManagementException
-import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.time.Instant
 import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
@@ -23,7 +20,7 @@ data class FTPConnection(
     val password: String? = null,
     val path: String? = null,
     val security: Security = Security.None,
-    val verifySSLCertificate: Boolean = true,
+    val ignoreCertificate: Boolean = false,
 ) {
     enum class Security {
         None,
@@ -83,7 +80,7 @@ data class FTPSource(
                 FTPConnection.Security.FTPES -> FTPClient.SECURITY_FTPES
             }
 
-            if ((security == FTPClient.SECURITY_FTPS || security == FTPClient.SECURITY_FTPES) && !connection.verifySSLCertificate) {
+            if (security != FTPClient.SECURITY_FTP && connection.ignoreCertificate) {
                 val trustManager = arrayOf<TrustManager>(object : X509TrustManager {
                     override fun getAcceptedIssuers(): Array<X509Certificate>? {
                         return null

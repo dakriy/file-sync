@@ -5,8 +5,8 @@ import com.uchuhimo.konf.source.yaml
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import kotlin.test.Test
 import org.intellij.lang.annotations.Language
+import kotlin.test.Test
 
 class SourceFactoryTest {
     private fun inputTest(@Language("YAML") yaml: String, block: ConfigInput.() -> Unit = {}) {
@@ -67,6 +67,110 @@ class SourceFactoryTest {
 
         ex.message shouldContain "The 'url' field is required for the FTP source 'src'."
     }
+
+    @Test
+    fun `should error given unknown protocol`() {
+        val ex = shouldThrow<IllegalStateException> {
+            inputTest(
+                """
+            fileSync:
+              sources:
+                - name: src
+                  type: FTP
+                  url: http://example.com
+              programs:
+                - name: programName
+                  source:
+                    name: src
+            """.trimIndent()
+            ) {
+                programs().first().source
+            }
+        }
+
+        ex.message shouldContain "Unknown protocol type 'http' for source 'src'."
+    }
+
+    @Test
+    fun `should parse ftp source`() =
+        inputTest(
+            """
+            fileSync:
+              sources:
+                - name: src
+                  type: FTP
+                  url: ftp://test.ftp.url
+              programs:
+                - name: programName
+                  source:
+                    name: src
+            """.trimIndent()
+        ) {
+            programs().first().source shouldBe FTPSource(
+                "src",
+                FTPConnection(
+                    url = "test.ftp.url",
+                    security = FTPConnection.Security.None,
+                    port = 21,
+                ),
+                1,
+            )
+        }
+
+    @Test
+    fun `should parse ftps source`() =
+        inputTest(
+            """
+            fileSync:
+              sources:
+                - name: src
+                  type: FTP
+                  url: ftps://test.ftp.url
+              programs:
+                - name: programName
+                  source:
+                    name: src
+            """.trimIndent()
+        ) {
+            programs().first().source shouldBe FTPSource(
+                "src",
+                FTPConnection(
+                    url = "test.ftp.url",
+                    security = FTPConnection.Security.FTPS,
+                    ignoreCertificate = false,
+                    port = 21,
+                ),
+                1,
+            )
+        }
+
+    @Test
+    fun `should parse ftpes source`() =
+        inputTest(
+            """
+            fileSync:
+              sources:
+                - name: src
+                  type: FTP
+                  url: ftpes://test.ftp.url
+                  ignoreCertificate: true
+              programs:
+                - name: programName
+                  source:
+                    name: src
+            """.trimIndent()
+        ) {
+            programs().first().source shouldBe FTPSource(
+                "src",
+                FTPConnection(
+                    url = "test.ftp.url",
+                    security = FTPConnection.Security.FTPES,
+                    ignoreCertificate = true,
+                    port = 21,
+                ),
+                1,
+            )
+        }
 
     @Test
     fun `should find ftp source given all the properties`() =

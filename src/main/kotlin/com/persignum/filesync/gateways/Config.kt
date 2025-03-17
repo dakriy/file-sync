@@ -22,6 +22,7 @@ data class SourceSpec(
     val username: String? = null,
     val password: String? = null,
     val port: Int? = null,
+    val ignoreCertificate: Boolean = false,
     val `class`: String? = null,
     val maxConcurrentDownloads: Int = 1,
 )
@@ -95,15 +96,25 @@ object DefaultSourceFactory : SourceFactory {
         return when (type) {
             SourceType.Empty -> EmptySource(spec.name)
             SourceType.FTP -> {
+                val fullUrl = spec.url ?: missingFieldError("url", SourceType.FTP, spec.name)
+                val protocol = fullUrl.substringBefore("://", "").lowercase()
+                val url = fullUrl.substringAfter("://")
+                val security = when (protocol) {
+                    "ftp", "" -> FTPConnection.Security.None
+                    "ftps" -> FTPConnection.Security.FTPS
+                    "ftpes" -> FTPConnection.Security.FTPES
+                    else -> error("Unknown protocol type '$protocol' for source '${spec.name}'.")
+                }
+
                 FTPSource(
                     spec.name, FTPConnection(
-                        spec.url ?: missingFieldError("url", SourceType.FTP, spec.name),
+                        url,
                         spec.port ?: 21,
                         spec.username,
                         spec.password,
                         impl?.path,
-                        FTPConnection.Security.None,
-                        true,
+                        security,
+                        spec.ignoreCertificate,
                     ),
                     depth = impl?.depth ?: 1
                 )
