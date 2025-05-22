@@ -10,7 +10,7 @@ import kotlin.test.Test
 
 class SourceFactoryTest {
     private fun inputTest(@Language("YAML") yaml: String, block: ConfigInput.() -> Unit = {}) {
-        val input = ConfigInput(DefaultSourceFactory, { _, _ -> EmptyOutputGateway }) {
+        val input = ConfigInput(DefaultSourceFactory, { _, _, _ -> EmptyOutputGateway }) {
             from.yaml.string(yaml)
         }
 

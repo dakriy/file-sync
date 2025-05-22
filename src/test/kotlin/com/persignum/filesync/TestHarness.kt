@@ -1,13 +1,15 @@
 package com.persignum.filesync
 
 import com.google.common.jimfs.Jimfs
-import com.persignum.filesync.domain.*
+import com.persignum.filesync.domain.FileSync
+import com.persignum.filesync.domain.OutputGateway
+import com.persignum.filesync.domain.OutputItem
+import com.persignum.filesync.domain.Source
 import com.persignum.filesync.gateways.*
-import com.persignum.filesync.gateways.OutputFactory
 import com.uchuhimo.konf.source.yaml
 import io.kotest.matchers.nulls.shouldNotBeNull
-import java.nio.file.FileSystem
 import org.intellij.lang.annotations.Language
+import java.nio.file.FileSystem
 
 class TestHarness {
     private var yaml: String = ""
@@ -50,10 +52,10 @@ class TestHarness {
     fun execute() {
         var outputItems: List<OutputItem>? = null
 
-        val outputFactory = OutputFactory { spec, limits ->
+        val outputFactory = OutputFactory { spec, limits, globalLimit ->
             val gateway = if(useEmptyOutput) EmptyOutputGateway else {
                 DefaultOutputFactory(fs, libreTimeConnector)
-                    .build(spec, limits)
+                    .build(spec, limits, globalLimit)
             }
 
             val outputGateway = OutputGateway {

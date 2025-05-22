@@ -4,17 +4,20 @@ import com.persignum.filesync.domain.Item
 import com.persignum.filesync.domain.OutputGateway
 import com.persignum.filesync.domain.OutputItem
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withContext
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.TagOptionSingleton
+import org.jaudiotagger.tag.reference.ID3V2Version
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Semaphore
-import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.TagOptionSingleton
-import org.jaudiotagger.tag.reference.ID3V2Version
 
 class FileOutput(
     private val directory: Path,
@@ -22,10 +25,12 @@ class FileOutput(
     private val ffmpegOptions: String?,
     private val dryRun: Boolean,
     downloadLimits: Map<String, Int>,
+    totalLimit: Int,
     id3Version: String?,
 ) : OutputGateway {
     private val logger = KotlinLogging.logger {}
     private val programSemaphores = downloadLimits.mapValues { Semaphore(it.value) }
+    private val globalSemaphore = Semaphore(totalLimit.coerceAtLeast(1))
 
     init {
         try {
@@ -38,6 +43,7 @@ class FileOutput(
     }
 
     override suspend fun save(items: List<OutputItem>) {
+        logger.info { "Downloading items..." }
         val transformDir = directory / "transform"
         createDirectories(items, transformDir)
 
@@ -63,7 +69,7 @@ class FileOutput(
 
     private suspend fun pipeline(item: OutputItem, transformDir: Path) {
         if (outputConnector.exists(item.file)) {
-            logger.info { "Skipping $item as it exists in LibreTime." }
+            logger.info { "Skipping $item as it exists in output connector." }
             return
         }
 
@@ -77,6 +83,7 @@ class FileOutput(
         val outFile = transformDir / item.program / item.file
 
         if (item.format != item.computeFormatFromName() || ffmpegOptions != null) {
+            logger.info { "Running ffmpeg processing for $item." }
             convert(file, outFile)
         } else file.copyTo(outFile, overwrite = true)
 
@@ -97,8 +104,13 @@ class FileOutput(
 
     suspend fun download(item: OutputItem): Path {
         val file = directory / item.program / item.name
-        if (file.exists()) return file
+        if (file.exists()) {
+            logger.info { "$item already exists. Skipping..." }
+            return file
+        }
+
         withContext(Dispatchers.IO) {
+            globalSemaphore.acquire()
             val semaphore = programSemaphores[item.source]
             semaphore?.acquire()
             logger.info { "Downloading $file" }
@@ -113,6 +125,7 @@ class FileOutput(
                 }
             } finally {
                 semaphore?.release()
+                globalSemaphore.release()
             }
         }
         setCreationTime(file, item)
@@ -159,7 +172,7 @@ class FileOutput(
 
         val file = try {
             path.toFile()
-        } catch (e: UnsupportedOperationException) {
+        } catch (_: UnsupportedOperationException) {
             return
         }
 

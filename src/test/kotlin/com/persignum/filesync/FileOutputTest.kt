@@ -13,6 +13,9 @@ import io.kotest.matchers.paths.shouldContainFile
 import io.kotest.matchers.paths.shouldContainFiles
 import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.attribute.BasicFileAttributes
@@ -23,9 +26,6 @@ import java.time.temporal.ChronoUnit
 import kotlin.io.path.*
 import kotlin.math.absoluteValue
 import kotlin.test.Test
-import kotlinx.coroutines.delay
-import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.tag.FieldKey
 
 class FileOutputTest {
     @Test
@@ -481,6 +481,39 @@ class FileOutputTest {
                   - name: src
                     type: Empty
                     maxConcurrentDownloads: 1
+                programs:
+                  - name: program
+                    source:
+                      name: src
+            """.trimIndent()
+        )
+
+        val item1 = MemoryItem("file1.mp3") {
+            item1Begin = Instant.now()
+            delay(25)
+        }
+        val item2 = MemoryItem("file2.mp3") {
+            item2Begin = Instant.now()
+            delay(25)
+        }
+        addSource("src", item1, item2)
+        assert {
+            val duration = Duration.between(item1Begin, item2Begin).toMillis().absoluteValue
+            duration shouldBeGreaterThan 24
+        }
+    }
+
+    @Test
+    fun `programs respect global download rate limits`() = fileSyncTest {
+        var item1Begin: Instant? = null
+        var item2Begin: Instant? = null
+        config(
+            """
+              fileSync:
+                maxConcurrentDownloads: 1
+                sources:
+                  - name: src
+                    type: Empty
                 programs:
                   - name: program
                     source:

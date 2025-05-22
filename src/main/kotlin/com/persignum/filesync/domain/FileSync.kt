@@ -67,7 +67,7 @@ class FileSync(
         }
 
         if (error != null) {
-            throw error!!
+            throw error
         }
     }
 }

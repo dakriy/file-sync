@@ -70,6 +70,10 @@ object FileSyncSpec : ConfigSpec() {
     val sources by optional<List<SourceSpec>>(emptyList())
 
     val stopOnFailure by optional<Boolean>(false)
+
+    val maxConcurrentDownloads by optional<Int>(
+        (Runtime.getRuntime().availableProcessors() * 3 / 4).coerceAtLeast(1)
+    )
 }
 
 data class OutputSpec(
@@ -86,7 +90,7 @@ data class OutputConnectorSpec(
 )
 
 fun interface OutputFactory {
-    fun build(config: OutputSpec, limits: Map<String, Int>): OutputGateway
+    fun build(config: OutputSpec, limits: Map<String, Int>, globalLimit: Int): OutputGateway
 }
 
 fun interface SourceFactory {
@@ -148,11 +152,12 @@ object DefaultSourceFactory : SourceFactory {
 
 class DefaultOutputFactory(
     private val fileSystem: FileSystem,
-    private val outputConnector: OutputConnector? = null
+    private val outputConnector: OutputConnector? = null,
 ) : OutputFactory {
     override fun build(
         config: OutputSpec,
         limits: Map<String, Int>,
+        globalLimit: Int,
     ): OutputGateway {
         val connector = outputConnector
             ?: buildConnectorWithReflection(config.connector)
@@ -163,6 +168,7 @@ class DefaultOutputFactory(
             config.ffmpegOptions,
             config.dryRun,
             limits,
+            globalLimit,
             config.id3Version,
         )
     }
@@ -232,6 +238,6 @@ class ConfigInput(
             SourceSpec::name,
             SourceSpec::maxConcurrentDownloads,
         )
-        return outputFactory.build(config[FileSyncSpec.output], limits)
+        return outputFactory.build(config[FileSyncSpec.output], limits, config[FileSyncSpec.maxConcurrentDownloads])
     }
 }

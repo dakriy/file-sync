@@ -4,9 +4,13 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.file
+import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.path
 import com.persignum.filesync.domain.FileSync
-import com.persignum.filesync.gateways.*
+import com.persignum.filesync.gateways.ConfigInput
+import com.persignum.filesync.gateways.DefaultOutputFactory
+import com.persignum.filesync.gateways.DefaultSourceFactory
+import com.persignum.filesync.gateways.FileSyncSpec
 import java.io.File
 import java.nio.file.FileSystems
 
@@ -29,6 +33,9 @@ class CLI : CliktCommand(name = "file-sync") {
     private val sources by option("--source", "-s")
         .help("Process all programs from a source.")
         .multiple()
+    private val cpus by option("--cpus", "-c")
+        .help("Maximum number of CPU's to use for file processing.")
+        .int()
 
     override fun run() {
         logLevel?.let { logLevel ->
@@ -53,6 +60,8 @@ class CLI : CliktCommand(name = "file-sync") {
             input.config[FileSyncSpec.output] =
                 input.config[FileSyncSpec.output].copy(dir = outputDir.toString())
         }
+
+        cpus?.let { input.config[FileSyncSpec.maxConcurrentDownloads] = it }
 
         if (stopOnFail) {
             input.config[FileSyncSpec.stopOnFailure] = true

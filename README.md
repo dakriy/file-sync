@@ -65,6 +65,7 @@ fileSync:
     # Array of programs
     - name: program1
   stopOnFailure: false # Optional, default is false. Stops on first failure.
+  maxConcurrentDownloads: 10 # Maximum total files allowed to be processing at once. Default is 3/4ths of available CPU's
 ```
 
 ### Sources
