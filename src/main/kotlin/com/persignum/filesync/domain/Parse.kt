@@ -1,5 +1,6 @@
 package com.persignum.filesync.domain
 
+import com.persignum.filesync.gateways.ParseMatchMode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -11,7 +12,7 @@ import java.time.format.DateTimeParseException
 data class Parse(
     val regex: Regex,
     val dateWithParseFormat: Map<String, DateTimeFormatter> = emptyMap(),
-    val strict: Boolean,
+    val matchMode: ParseMatchMode,
     val entireMatch: Boolean,
 ) {
     private val logger = KotlinLogging.logger { }
@@ -26,8 +27,12 @@ data class Parse(
 
         if (result == null) {
             val message = "Item in $program did not match '${item.name}'"
-            if (strict) error(message)
-            else logger.warn { message }
+
+            when (matchMode) {
+                ParseMatchMode.Strict -> error(message)
+                ParseMatchMode.Warn -> logger.warn { message }
+                ParseMatchMode.Lax -> {}
+            }
 
             return null
         }

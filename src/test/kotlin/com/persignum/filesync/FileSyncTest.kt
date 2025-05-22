@@ -917,7 +917,7 @@ class FileSyncTest {
                     - name: program
                       parse:
                         regex: item \d
-                        strict: true
+                        matchMode: Strict
                  """.trimIndent()
                 )
 

@@ -35,16 +35,22 @@ data class SourceImplSpec(
     val extensions: List<String>? = null,
 )
 
+enum class ParseMatchMode {
+    Strict,
+    Warn,
+    Lax,
+}
+
 data class ParseSpec(
     val regex: String,
     val dates: Map<String, String> = emptyMap(),
-    val strict: Boolean = false,
+    val matchMode: ParseMatchMode = ParseMatchMode.Lax,
     val entireMatch: Boolean = false,
 ) {
     fun toParse() = Parse(
         regex.toRegex(),
         dates.mapValues { (_, v) -> DateTimeFormatter.ofPattern(v) },
-        strict,
+        matchMode,
         entireMatch,
     )
 }
