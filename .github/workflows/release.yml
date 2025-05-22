@@ -52,8 +52,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:${{ github.ref_name }} .
+          docker build \
+            -t ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
+            -t ghcr.io/${{ github.repository }}:latest \
+            .
 
       - name: Push Docker image
         run: |
           docker push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          docker push ghcr.io/${{ github.repository }}:latest
