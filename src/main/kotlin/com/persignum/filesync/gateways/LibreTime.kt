@@ -11,13 +11,15 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.cio.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import java.util.*
 import kotlin.io.path.name
 import kotlin.io.path.pathString
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 interface OutputConnector {
     suspend fun exists(filename: String): Boolean
@@ -46,9 +48,10 @@ class LibreTimeApi(
         }
     )
 
+    private val scope = CoroutineScope(Dispatchers.IO)
     private val logger = KotlinLogging.logger {}
-    private val fileNames by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        runBlocking {
+    private val fileNames by lazy {
+        scope.async {
             val response: HttpResponse = httpClient.get("$libreTimeUrl/api/v2/files?format=json") {
                 headers {
                     append("Authorization", "Api-Key $apiKey")
@@ -67,7 +70,7 @@ class LibreTimeApi(
         }
     }
 
-    override suspend fun exists(filename: String) = filename in fileNames
+    override suspend fun exists(filename: String) = filename in fileNames.await()
 
     override suspend fun upload(file: Path) {
         logger.info { "Uploading ${file.name} to LibreTime..." }
