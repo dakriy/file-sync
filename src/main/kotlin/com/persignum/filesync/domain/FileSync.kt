@@ -17,7 +17,7 @@ class FileSync(
             try {
                 val extensionWhitelist = program.extensions
                 val items = program.source.listItems()
-                    .sortedByDescending { it.createdAt }
+                    .sortedWith(program.sortMode.comparator)
                     .filter {
                         if (extensionWhitelist != null) {
                             it.computeFormatFromName() in extensionWhitelist

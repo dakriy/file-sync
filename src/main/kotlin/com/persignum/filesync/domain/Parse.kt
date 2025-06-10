@@ -1,6 +1,5 @@
 package com.persignum.filesync.domain
 
-import com.persignum.filesync.gateways.ParseMatchMode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -8,6 +7,11 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
+enum class ParseMatchMode {
+    Strict,
+    Warn,
+    Lax,
+}
 
 data class Parse(
     val regex: Regex,

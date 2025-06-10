@@ -33,13 +33,8 @@ data class SourceImplSpec(
     val depth: Int = 1,
     val path: String? = null,
     val extensions: List<String>? = null,
+    val sortMode: SortMode? = null,
 )
-
-enum class ParseMatchMode {
-    Strict,
-    Warn,
-    Lax,
-}
 
 data class ParseSpec(
     val regex: String,
@@ -228,7 +223,8 @@ class ConfigInput(
                 source,
                 parse,
                 program.output,
-                program.source?.extensions?.toSet()
+                program.source?.extensions?.toSet(),
+                program.source?.sortMode ?: SortMode.DateDesc,
             )
         }
     }

@@ -931,7 +931,7 @@ class FileSyncTest {
     }
 
     @Test
-    fun `should be ordered with newest first given oldest first`() = fileSyncTest {
+    fun `should be ordered by DateDesc by default`() = fileSyncTest {
         config(
             """
                 fileSync:
@@ -947,6 +947,75 @@ class FileSyncTest {
 
         assert { results ->
             results shouldMatch listOf(item2, item1)
+        }
+    }
+
+    @Test
+    fun `should be ordered by name asc when specified`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      source:
+                        name: hi
+                        sortMode: NameAsc
+                 """.trimIndent()
+        )
+
+        val item1 = MemoryItem("file 1", Instant.now().minusSeconds(1000))
+        val item2 = MemoryItem("file 2", Instant.now())
+
+        addSource("program", item1, item2)
+
+        assert { results ->
+            results shouldMatch listOf(item1, item2)
+        }
+    }
+
+    @Test
+    fun `should be ordered by name desc when specified`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      source:
+                        name: hi
+                        sortMode: NameDesc
+                 """.trimIndent()
+        )
+
+        val item1 = MemoryItem("file 1", Instant.now().minusSeconds(1000))
+        val item2 = MemoryItem("file 2", Instant.now())
+
+        addSource("program", item1, item2)
+
+        assert { results ->
+            results shouldMatch listOf(item2, item1)
+        }
+    }
+
+    @Test
+    fun `should be ordered by date asc when specified`() = fileSyncTest {
+        config(
+            """
+                fileSync:
+                  programs:
+                    - name: program
+                      source:
+                        name: hi
+                        sortMode: DateAsc
+                 """.trimIndent()
+        )
+
+        val item1 = MemoryItem("file 1", Instant.now().minusSeconds(1000))
+        val item2 = MemoryItem("file 2", Instant.now())
+
+        addSource("program", item2, item1)
+
+        assert { results ->
+            results shouldMatch listOf(item1, item2)
         }
     }
 

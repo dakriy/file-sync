@@ -194,6 +194,7 @@ the source since multiple programs can share a source.
 | depth      | Int          | 1        | If there are folders underneath the defined path, the depth will allow you to set how far you want to traverse the directory structure to find items. Depth 1 means current directory only. |
 | path       | string       | null     | The path on the source where the program lives.                                                                                                                                             |
 | extensions | List<String> | null     | Allowed list of file extensions. By default, no file extension whitelist is applied.                                                                                                        |
+| sortMode   | Enum         | DateDesc | Order to sort files in before processing. This also comes before the file limit. Options are, NameAsc, NameDesc, DateAsc, DateDesc                                                          |
 
 #### Output
 
