@@ -1,11 +1,11 @@
 package com.persignum.filesync.gateways
 
 import com.github.sardine.SardineFactory
-import io.ktor.http.*
-import java.time.Instant
 import com.persignum.filesync.domain.Item
 import com.persignum.filesync.domain.Source
+import io.ktor.http.*
 import java.io.OutputStream
+import java.time.Instant
 
 data class NextCloudSource(
     override val name: String,
@@ -39,7 +39,6 @@ data class NextCloudSource(
             .map { item ->
                 NextCloudItem(item.name, item.modified.toInstant(), item.path)
             }
-            .sortedByDescending { it.createdAt }
         sardine.shutdown()
 
         return items.asSequence()

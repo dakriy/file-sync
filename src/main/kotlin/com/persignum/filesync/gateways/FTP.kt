@@ -70,7 +70,6 @@ data class FTPSource(
 
     override fun listItems(): Sequence<Item> = ftpAction { ftp ->
         ftp.list(connection.path, depth)
-            .sortedByDescending { it.createdAt }
     }.asSequence()
 
     private fun <T> ftpAction(action: (FTPClient) -> T): T {

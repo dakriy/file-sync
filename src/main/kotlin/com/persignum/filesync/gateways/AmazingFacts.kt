@@ -1,17 +1,17 @@
 package com.persignum.filesync.gateways
 
+import com.persignum.filesync.domain.Item
+import com.persignum.filesync.domain.Source
 import io.ktor.http.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.jsoup.Jsoup
+import java.io.OutputStream
 import java.net.URL
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.jsoup.Jsoup
-import com.persignum.filesync.domain.Item
-import com.persignum.filesync.domain.Source
-import java.io.OutputStream
 
 @Suppress("unused")
 class AmazingFactsSource(
@@ -42,7 +42,6 @@ class AmazingFactsSource(
         val doc = Jsoup.connect(initialUrl).get()
         val elements = doc.select("table.table tr td a[href]")
 
-        // order is automatically in date order descending
         return elements
             .asSequence()
             .mapNotNull {
