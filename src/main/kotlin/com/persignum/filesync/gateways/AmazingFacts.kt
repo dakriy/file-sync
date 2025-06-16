@@ -1,12 +1,12 @@
 package com.persignum.filesync.gateways
 
 import com.persignum.filesync.domain.Item
+import com.persignum.filesync.domain.SortMode
 import com.persignum.filesync.domain.Source
 import io.ktor.http.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import java.io.OutputStream
+import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
 import java.time.LocalDate
@@ -23,14 +23,34 @@ class AmazingFactsSource(
         requireNotNull(spec.url) { "The 'url' field is required for an AmazingFacts source." }
     }
 
+    override val forceSortMode: SortMode = SortMode.DateDesc
+
     inner class AmazingFactsItem(
         override val name: String,
         override val createdAt: Instant,
-        private val downloadUrl: String,
+        private val detailsUrl: String,
+        private val downloadUrl: String?,
     ) : Item {
         override suspend fun data(stream: OutputStream) {
-            withContext(Dispatchers.IO) {
-                URL(downloadUrl).openStream().copyTo(stream)
+            val downloadUrl = downloadUrl ?: error("No download url for $name at $detailsUrl")
+            val url = URL(downloadUrl)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connect()
+
+            try {
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.inputStream.use { input ->
+                        stream.use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                } else {
+                    error("Failed to download $name at $downloadUrl. Details $detailsUrl HTTP error code: $responseCode")
+                }
+            } finally {
+                connection.disconnect()
             }
         }
     }
@@ -44,8 +64,8 @@ class AmazingFactsSource(
 
         return elements
             .asSequence()
-            .mapNotNull {
-                val relativeUrl = it.attr("href") ?: return@mapNotNull null
+            .mapNotNull { element ->
+                val relativeUrl = element.attr("href") ?: return@mapNotNull null
 
                 val detailsUrl = constructAbsoluteUrl(initialUrl, relativeUrl)
 
@@ -63,15 +83,16 @@ class AmazingFactsSource(
                     .toInstant()
 
                 val downloadTag = detailsDoc.getElementsContainingText("Audio Download")
-                    .lastOrNull { it.tagName() == "a" } ?: error("No download url for $title at $detailsUrl")
+                    .lastOrNull { it.tagName() == "a" }
 
-                val downloadUrl = downloadTag.attr("href") ?: error("Missing href for download url for $title at $detailsUrl")
+                val downloadUrl = downloadTag?.attr("href")
 
-                val fileName = downloadUrl.substringAfterLast("/")
+                val fileName = downloadUrl?.substringAfterLast("/")
 
                 AmazingFactsItem(
-                    "$title --- $fileName",
+                    if (fileName != null) "$title --- $fileName" else title,
                     createdAt,
+                    detailsUrl,
                     downloadUrl,
                 )
             }

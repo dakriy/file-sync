@@ -13,5 +13,8 @@ fun interface OutputGateway {
 interface Source {
     val name: String
 
+    val forceSortMode: SortMode?
+        get() = null
+
     fun listItems(): Sequence<Item>
 }

@@ -123,6 +123,9 @@ class FileOutput(
                 ).use { outputStream ->
                     item.data(outputStream)
                 }
+            } catch (e: Exception) {
+                file.deleteIfExists()
+                throw e
             } finally {
                 semaphore?.release()
                 globalSemaphore.release()
@@ -181,7 +184,7 @@ class FileOutput(
         item.tags.forEach { (key, value) ->
             val fieldKey = try {
                 FieldKey.valueOf(key.uppercase())
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 logger.warn { "Tag $key not valid tag. Valid tags are ${FieldKey.entries.map { it.name.lowercase() }}." }
                 return@forEach
             }
