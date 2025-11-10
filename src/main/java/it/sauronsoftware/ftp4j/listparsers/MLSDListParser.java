@@ -21,15 +21,12 @@ package it.sauronsoftware.ftp4j.listparsers;
 import it.sauronsoftware.ftp4j.FTPFile;
 import it.sauronsoftware.ftp4j.FTPListParseException;
 import it.sauronsoftware.ftp4j.FTPListParser;
+import it.sauronsoftware.ftp4j.MLSDLineParserKt;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.StringTokenizer;
+import java.util.*;
 
 /**
  * This parser can handle the standard MLST/MLSD responses (RFC 3659).
@@ -75,16 +72,8 @@ public class MLSDListParser implements FTPListParser {
 	 *             If the line is not a valid MLSD entry.
 	 */
 	private FTPFile parseLine(String line) throws FTPListParseException {
-		// Divides facts and name.
-		ArrayList list = new ArrayList();
-		StringTokenizer st = new StringTokenizer(line, ";");
-		while (st.hasMoreElements()) {
-			String aux = st.nextToken().trim();
-			if (aux.length() > 0) {
-				list.add(aux);
-			}
-		}
-		if (list.size() == 0) {
+        List list = MLSDLineParserKt.parseLine(line);
+		if (list.isEmpty()) {
 			throw new FTPListParseException();
 		}
 		// Extracts the file name.
