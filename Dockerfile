@@ -1,17 +1,14 @@
-FROM gradle:jdk17 AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 WORKDIR /build
 COPY . .
 
 RUN ./gradlew installShadowDist
 
-FROM openjdk:24-jdk-slim
+FROM eclipse-temurin:25-jre-alpine
 
 # Install ffmpeg
-RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ffmpeg
 
 WORKDIR /app
 
